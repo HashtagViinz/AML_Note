@@ -52,12 +52,20 @@
 
 \begingroup
 \thispagestyle{empty}
-\AddToShipoutPicture*{\put(0,0){\includegraphics[scale=1.25]{esahubble}}} % Image background
+\AddToShipoutPicture*{\put(0,0){\includegraphics[scale=0.20]{test2}}} % Image background
+
+% --- INIZIO FASCIA SEMI-TRASPARENTE ---
+\begin{tikzpicture}[remember picture, overlay]
+    \fill[ocre, opacity=0.9] 
+        ([yshift=4.5cm]current page.center |- current page.west) rectangle ([yshift=-4cm]current page.center |- current page.east);
+\end{tikzpicture}
+% --- FINE FASCIA SEMI-TRASPARENTE ---
+
 \centering
-\vspace*{5cm}
+\vspace*{6cm}
 \par\normalfont\fontsize{35}{35}\sffamily\selectfont
-\textbf{Cloud Computing}\\
-{\LARGE Il bello di vivere}\par % Book title
+\textbf{Advanced Machine Learning}\\
+{\LARGE La Voglia di Morire}\par % Book title
 \vspace*{0.5cm}
 {\Huge Vincenzo Salvatore}\par % Author name
 \vspace*{0.25cm}
@@ -74,13 +82,13 @@
 
 %\noindent Copyright \copyright\ 2014 Andrea Hidalgo\\ % Copyright notice
 
-\noindent \textsc{Corso di Cloud Computing, Università La Sapienza}\\
+\noindent \textsc{Corso di Advanced Machine Learning, Università La Sapienza}\\
 
 %----------------------------------------------------------------------------------------
 %	TABLE OF CONTENTS
 %----------------------------------------------------------------------------------------
 
-\chapterimage{head1.png} % Table of contents heading image
+\chapterimage{Pictures/Chapters/Chap1.jpg} % Placeholder image
 
 \pagestyle{empty} % No headers
 
