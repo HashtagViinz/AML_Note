@@ -362,7 +362,7 @@ innerbottommargin=5pt]{cBox}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % The code below defines the "keywordbox" environment, which is a custom colored box with a title "Key Word". It is designed to highlight important terms or concepts in the text. The box has a light yellow background, a darker yellow border, and rounded corners. The title is displayed in bold and sans-serif font at the top of the box, and the content of the box can be customized when using the environment.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\usepackage[skins]{tcolorbox} % Pacchetto per riquadri avanzati
+\usepackage[skins,breakable]{tcolorbox} % Pacchetto per riquadri avanzati
 
 % Creiamo l'ambiente personalizzato "keywordbox"
 \newtcolorbox{keywordbox}[1][]{
@@ -372,6 +372,7 @@ innerbottommargin=5pt]{cBox}
   boxrule=1pt,
   arc=3mm,
   drop fuzzy shadow,
+  breakable,
   title=\textbf{\textsf{Key Word}},
   coltitle=black,
   attach boxed title to top left={xshift=4mm, yshift=-1mm},
@@ -387,6 +388,7 @@ innerbottommargin=5pt]{cBox}
   boxrule=1pt,
   arc=3mm,
   drop fuzzy shadow,
+  breakable,
   title=\textbf{\textsf{Example}},
   coltitle=black,
   attach boxed title to top left={xshift=4mm, yshift=-1mm},
@@ -402,9 +404,25 @@ innerbottommargin=5pt]{cBox}
   boxrule=1pt,
   arc=3mm,
   drop fuzzy shadow,
+  breakable,
   title=\textbf{\textsf{Note}},
   coltitle=black,
   attach boxed title to top left={xshift=4mm, yshift=-1mm},
   boxed title style={size=small, colback=orange!40, colframe=orange!70!black},
+  #1
+}
+% Creiamo l'ambiente personalizzato "InsightBox"
+\newtcolorbox{InsightBox}[1][]{
+  enhanced,
+  colback=blue!5,
+  colframe=blue!70!black,
+  boxrule=1pt,
+  arc=3mm,
+  drop fuzzy shadow,
+  breakable,
+  title=\textbf{\textsf{Key Insight}},
+  coltitle=white,
+  attach boxed title to top left={xshift=4mm, yshift=-1mm},
+  boxed title style={size=small, colback=blue!70!black, colframe=blue!70!black},
   #1
 }

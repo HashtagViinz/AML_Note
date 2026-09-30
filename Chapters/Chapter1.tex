@@ -149,19 +149,13 @@ Computing this true gradient (the \textbf{Full Batch} gradient) requires evaluat
 \subsection{Backpropagation}
 To update weights, we compute gradients via \textbf{Backpropagation}, which applies the chain rule from the output back to the inputs (backward pass).
 
-\begin{examplebox}
-\textbf{Patterns in gradient flow:}
-\begin{itemize}[nosep, leftmargin=*]
-    \item \textbf{Add gate}: Acts as a gradient distributor.
-    \item \textbf{Max gate}: Acts as a gradient router.
-    \item \textbf{Mul gate}: Acts as a ``swap multiplier''.
-    \item \textbf{Copy gate}: Acts as a gradient adder.
-\end{itemize}
-\end{examplebox}
-
 \begin{Notebox}
 \textbf{Backprop with Matrices:} When inputs and weights are vectors or matrices, local gradients become \textit{Jacobian matrices}. However, Jacobians are often sparse. Instead of explicitly forming them, we use implicit multiplication. A very useful trick to remember: the downstream gradient $dL/dx$ \textbf{always has the same shape} as $x$!
 \end{Notebox}
+
+Here are some solved exercises demonstrating the Forward and Backward pass step-by-step:
+
+\includepdf[pages=-]{Pictures/FDS_Exercises.pdf}
 
 \subsection{Deeper Neural Networks}
 By stacking multiple layers and applying non-linear activation functions, we create multi-layer Neural Networks (e.g., $f = W_2 \max(0, W_1 x)$).
@@ -175,9 +169,275 @@ An \textbf{activation function} is a mathematical ``gate'' applied to the output
 \end{Notebox}
 
 Some of the most common activation functions include:
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.7\textwidth]{Pictures/Activation_fun.png}
+    \caption{Illustration Activation Function.}\label{fig:ActivationFunction}
+\end{figure}
+
 \begin{itemize}[nosep, leftmargin=*]
     \item \textbf{Sigmoid}: $\sigma(x) = \frac{1}{1 + e^{-x}}$. It squashes numbers to the range $[0, 1]$. Historically popular, but suffers from the \textit{vanishing gradient} problem.
     \item \textbf{tanh}: Squashes numbers to the range $[-1, 1]$. Like sigmoid, its gradients vanish for very large or very small inputs.
     \item \textbf{ReLU (Rectified Linear Unit)}: $f(x) = \max(0, x)$. It is the most widely used default choice because it is computationally efficient and greatly mitigates the vanishing gradient problem.
     \item \textbf{Leaky ReLU} and \textbf{ELU}: Variations of ReLU designed to allow a small, non-zero gradient when $x < 0$ to prevent ``dead neurons''.
 \end{itemize}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+\section{Recap on Convolutional Neural Networks (CNNs)}
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.7\textwidth]{Pictures/convolutional_layer_example.png}
+    \caption{Illustration of a single convolutional layer.}\label{fig:convolutional_layer_example}
+\end{figure}
+
+\subsection{Motivation: The Problem with Fully Connected Layers}
+In a standard Fully Connected (Dense) layer, every input neuron is connected to every output neuron. 
+If we process a high-resolution image for example, a \(1000 \times 1000\) RGB image (\(3 \times 10^6\) inputs) even a modest layer with \(10^3\) hidden units would require over 3 billion parameters.
+
+This huge parameter count leads to two main issues:
+\begin{itemize}
+    \item \textbf{Computational Inefficiency \& Overfitting:} Storing and updating billions of weights requires massive memory and easily leads to severe overfitting.
+    \item \textbf{Loss of Spatial Structure:} Flattening a 2D/3D image into a 1D vector completely ignores the grid-like topology of pixels.
+\end{itemize}
+
+\subsection{Exploiting Image Structure: Locality and Stationarity}
+To overcome these limitations, Convolutional Neural Networks (\textbf{CNN}) build upon two fundamental spatial properties of images:
+\begin{enumerate}
+    \item \textbf{Local Spatial Correlation:} Nearby pixels are strongly related, whereas distant pixels are less relevant. Instead of connecting a unit to the whole image, we can connect it only to a small local patch (a \emph{receptive field}).
+    \item \textbf{Stationarity (Translation Invariance):} Features are location-independent. An edge, texture, or pattern detected in the top-left corner is equally meaningful in the bottom-right corner. Therefore, we can share the same set of weights across all locations.
+\end{enumerate}
+
+\subsection{The Core Building Block: A Simple Convolutional Layer}
+A Convolutional Layer replaces the dense matrix multiplication with a local, sliding operation.
+
+\begin{itemize}
+    \item \textbf{The Kernel (Filter):} A small matrix of learnable weights (e.g., \(3 \times 3\) or \(5 \times 5\)). It acts as a pattern detector.
+    \item \textbf{The Sliding Window:} The kernel slides across the input image step-by-step. At each position, it computes an element-wise multiplication with the underlying image patch and sums the results up.
+    \item \textbf{The Feature Map:} The output grid produced by sliding the kernel, Figure\ref{fig:featuremap}. High values in the feature map indicate a strong match between the kernel's pattern and that specific image region.
+\end{itemize}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.7\textwidth]{Pictures/conv_feature_map.png}
+    \caption{Illustration of multiple features map obtained by different filters}\label{fig:featuremap}
+\end{figure}
+
+\subsection{Key Hyperparameters: Controlling the Convolution}
+The behavior and output size of a convolutional layer depend on three primary parameters:
+\begin{itemize}
+    \item \textbf{Stride (\(S\)):} The step size with which the kernel moves across the image. A stride of 1 moves pixel-by-pixel, while \(S > 1\) downsamples the output.
+    \item \textbf{Padding (\(P\)):} Adding zero-valued borders around the input image to preserve spatial dimensions and process edge pixels effectively.
+    \item \textbf{Input/Output Channels (\(C\)):} Real images have depth (e.g., \(C_{in} = 3\) for RGB). A kernel must match the depth of the input, resulting in a 3D tensor of shape \((C_{in} \times K_h \times K_w)\). Using \(C_{out}\) distinct kernels produces \(C_{out}\) output feature maps.
+\end{itemize}
+
+\subsection{Formal Mathematical Definition}
+Mathematically, the operation performed on a 2D input matrix \(I\) by a 2D kernel \(g\) to yield a feature map \(f\) at position \([m, n]\) is defined as:
+
+\begin{equation}
+    f[m, n] = (I * g)[m, n] = \sum_{k} \sum_{l} I[m - k, n - l] \, g[k, l]
+\end{equation}
+\\
+where \(k\) and \(l\) iterate over the spatial dimensions of the kernel.
+
+\paragraph{Note on Deep Learning vs. Signal Processing:}
+In classic signal processing, the index subtraction \(I[m - k, n - l]\) implies flipping the filter \(g\) by \(180^\circ\). 
+\\
+However, deep learning frameworks (like PyTorch and TensorFlow) compute \textbf{Cross-Correlation} instead:
+\begin{equation}
+    f[m, n] = (I \star g)[m, n] = \sum_{k} \sum_{l} I[m + k, n + l] \, g[k, l]
+\end{equation}
+Skipping the flipping step saves computation. Since kernel weights \(g[k, l]\) are learned from scratch via backpropagation, the network simply learns the pre-flipped weights directly, making the distinction mathematically equivalent for optimization.
+
+
+
+
+
+\subsection{Intuitive Examples: Classic Image Processing Filters}
+Before moving to 3D volumes, let us observe how simple 2D matrices (kernels) process local pixel neighborhoods to extract features or alter images.
+
+\begin{examplebox}
+\textbf{1. Smoothing Filter (Noise Reduction):}\\
+Replacing each pixel with a weighted combination of its local neighborhood dampens noise and sharp anomalies:
+\[
+\begin{array}{|c|c|c|} % chktex 44
+\hline % chktex 44
+2 & 3 & 3 \\ \hline % chktex 44
+3 & \mathbf{20} & 2 \\ \hline % chktex 44
+3 & 2 & 3 \\ \hline % chktex 44
+\end{array}
+\quad \xrightarrow{\text{Smoothing}} \quad
+\begin{array}{|c|c|c|} % chktex 44
+\hline % chktex 44
+2 & 3 & 3 \\ \hline % chktex 44
+3 & \mathbf{3} & 2 \\ \hline % chktex 44
+3 & 2 & 3 \\ \hline % chktex 44
+\end{array}
+\]
+The central outlier value ($20$) is effectively smoothed down to $3$.
+\end{examplebox}
+
+\begin{examplebox}
+\textbf{2. Vertical Edge Detection Filter:}\\
+Filters with opposing positive and negative weights capture spatial variations in intensity. For example, a vertical edge detector is defined as:
+\[
+g_{\text{vertical}} = \begin{array}{|c|c|c|} % chktex 44
+\hline % chktex 44
+-1 & 0 & 1 \\ \hline % chktex 44
+-1 & 0 & 1 \\ \hline % chktex 44
+-1 & 0 & 1 \\ \hline % chktex 44
+\end{array}
+\]
+\textit{Note:} Transposing \(g_{\text{vertical}}\) yields a horizontal edge detector \(g_{\text{horizontal}} = g_{\text{vertical}}^T\).
+\end{examplebox}
+
+\begin{examplebox}
+\textbf{3. Step-by-Step 2D Convolution Example (Stride 1, Pad 1):}\\
+Consider convolving a \(3 \times 3\) image \(I\) with a \(3 \times 3\) vertical edge filter \(g\), applying \textbf{Padding \(P = 1\)} and \textbf{Stride \(S = 1\)}:
+
+\[
+\begin{array}{c} g[k,l] \\ \begin{array}{|c|c|c|} % chktex 44
+\hline % chktex 44
+-1 & 0 & 1 \\ \hline % chktex 44
+-1 & 0 & 1 \\ \hline % chktex 44
+-1 & 0 & 1 \\ \hline % chktex 44
+\end{array} \end{array}
+\quad \otimes \quad
+\begin{array}{c} I[k,l] \\ \begin{array}{|c|c|c|} % chktex 44
+\hline % chktex 44
+8 & 5 & 2 \\ \hline % chktex 44
+7 & 5 & 3 \\ \hline % chktex 44
+9 & 4 & 1 \\ \hline % chktex 44
+\end{array} \end{array}
+\quad = \quad
+\begin{array}{c} f[m,n] \\ \begin{array}{|c|c|c|} % chktex 44
+\hline % chktex 44
+-10 & 10 & 10 \\ \hline % chktex 44
+-14 & 18 & 14 \\ \hline % chktex 44
+-9 & 12 & 9 \\ \hline % chktex 44
+\end{array} \end{array}
+\]
+
+\textbf{Calculation Detail (Accounting for 180\(^\circ\) Kernel Flip):}\\
+According to \(f[m,n] = \sum I[m-k, n-l] g[k,l]\), the kernel \(g\) is flipped by \(180^\circ\) prior to element-wise multiplication:
+\[
+g_{\text{flipped}} = \begin{array}{|c|c|c|} % chktex 44
+\hline % chktex 44
+1 & 0 & -1 \\ \hline % chktex 44
+1 & 0 & -1 \\ \hline % chktex 44
+1 & 0 & -1 \\ \hline % chktex 44
+\end{array}
+\]
+\begin{itemize}[nosep, leftmargin=*]
+    \item \textbf{Center Value \(f[1,1] = 18\):} Flipped kernel overlaps fully with \(I\):
+    \[ (1 \cdot 8 - 1 \cdot 2) + (1 \cdot 7 - 1 \cdot 3) + (1 \cdot 9 - 1 \cdot 1) = 6 + 4 + 8 = 18 \]
+    
+    \item \textbf{Top-Left Value \(f[0,0] = -10\):} Flipped kernel overlaps with top-left corner of zero-padded image:
+    \[ (1 \cdot 0 - 1 \cdot 5) + (1 \cdot 0 - 1 \cdot 5) = -10 \]
+\end{itemize}
+\end{examplebox}
+
+\subsection{Output Shape and Parameter Counting for 3D Volumes}
+In practical deep learning architectures, inputs are 3D tensors $(C_{\text{in}} \times H \times W)$ and layers use multiple filters to extract distinct visual features.
+
+\subsubsection*{Spatial Output Size Formula}
+Given an input of spatial size $W$, kernel size $K$, padding $P$, and stride $S$, the output dimension $W_{\text{out}}$ is given by:
+\begin{equation}
+W_{\text{out}} = \left\lfloor \frac{W - K + 2P}{S} \right\rfloor + 1
+\end{equation}
+
+\begin{examplebox}
+\textbf{Example: Output Volume Size \& Parameters Calculation}\\
+If the input volume is a \textbf{$32 \times 32 \times 3$} image, and we apply \textbf{10 filters of size $5 \times 5$} (with Stride $S = 1$, Padding $P = 2$):
+\begin{itemize}[nosep, leftmargin=*]
+\item \textbf{Output spatial size:} $(32 + 2 \cdot 2 - 5)/1 + 1 = 32$ spatially ($32 \times 32$).
+\item \textbf{Output volume size:} $32 \times 32 \times 10$.
+\item \textbf{Number of parameters:} Each filter has $5 \times 5 \times 3 + 1 \, (\text{bias}) = 76$ parameters. For 10 filters: $76 \times 10 = \mathbf{760\text{ parameters}}$.
+\end{itemize}
+\end{examplebox}
+
+\subsection{The Pooling Layer}
+A Convolutional Neural Network usually interleaves Convolutional layers with Pooling layers. 
+
+\paragraph{Purpose of Pooling:}
+The primary goal of a pooling layer is to perform \textbf{spatial downsampling} (subsampling). By doing so, it:
+\begin{itemize}[nosep, leftmargin=*]
+    \item \textbf{Reduces the spatial dimensions} (width and height) of the representation, making it smaller and more computationally manageable.
+    \item \textbf{Reduces the number of parameters} in the subsequent fully connected layers, thus helping to control overfitting.
+    \item \textbf{Provides Translation Invariance:} Small shifts or distortions in the input image will not drastically change the pooled output, making the network more robust to exact feature locations.
+\end{itemize}
+
+\paragraph{How it Operates:}
+Unlike the convolution layer, a pooling layer \textbf{operates independently on every depth slice} (activation map) of the input. It does not mix channels. If the input has $C$ channels, the output will also have $C$ channels.
+
+\subsubsection*{Max Pooling}
+The most common implementation is \textbf{Max Pooling}. Instead of computing a dot product like a filter, it simply slides a window across the image and takes the \textbf{maximum value} within that window.
+
+\begin{examplebox}
+\textbf{Max Pooling Example (Stride 2, Filter $2 \times 2$):}\\
+Consider a single depth slice (activation map) of size $4 \times 4$. If we apply a Max Pooling layer with a $2 \times 2$ filter and a stride of 2:
+\[
+\begin{array}{|c|c|c|c|} % chktex 44
+\hline % chktex 44
+1 & 1 & 2 & 4 \\ \hline % chktex 44
+5 & 6 & 7 & 8 \\ \hline % chktex 44
+3 & 2 & 1 & 0 \\ \hline % chktex 44
+1 & 2 & 3 & 4 \\ \hline % chktex 44
+\end{array}
+\quad \xrightarrow{\text{Max Pool } 2 \times 2, S=2} \quad
+\begin{array}{|c|c|} % chktex 44
+\hline % chktex 44
+6 & 8 \\ \hline % chktex 44
+3 & 4 \\ \hline % chktex 44
+\end{array}
+\]
+The spatial dimensions are exactly halved. The operation discards $75\%$ of the activations, keeping only the most prominent features (highest numbers) in each local $2 \times 2$ region.
+\end{examplebox}
+
+\subsection{Visualizing ConvNets}
+
+\begin{InsightBox}
+Understanding what deep CNNs learn requires visualization techniques (e.g., Deconvolutional Networks by Zeiler and Fergus). By projecting high-level feature maps back to the pixel space:
+\begin{itemize}[nosep, leftmargin=*]
+    \item \textbf{Layer 1:} Learns low-level features like edges and colors.
+    \item \textbf{Layer 2:} Learns simple textures and geometric patterns.
+    \item \textbf{Layer 3 \& Higher:} Learns complex, object-specific parts (e.g., dog faces, car wheels) and eventually full objects.
+\end{itemize}
+\end{InsightBox}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.5\textwidth]{Pictures/in_out.png}\label{fig:inout}
+\end{figure}
+
+
