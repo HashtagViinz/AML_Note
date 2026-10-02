@@ -323,8 +323,21 @@ g_{\text{vertical}} = \begin{array}{|c|c|c|} % chktex 44
 
 \begin{examplebox}
 \textbf{3. Step-by-Step 2D Convolution Example (Stride 1, Pad 1):}\\
-Consider convolving a \(3 \times 3\) image \(I\) with a \(3 \times 3\) vertical edge filter \(g\), applying \textbf{Padding \(P = 1\)} and \textbf{Stride \(S = 1\)}:
+Consider convolving a \(3 \times 3\) image \(I\) with a \(3 \times 3\) vertical edge filter \(g\). Applying \textbf{Padding \(P = 1\)} means we add a border of zeros around \(I\), resulting in a \(5 \times 5\) padded image \(I_{\text{padded}}\):
 
+\[
+I_{\text{padded}} = 
+\begin{array}{|c|c|c|c|c|} % chktex 44
+\hline % chktex 44
+0 & 0 & 0 & 0 & 0 \\ \hline % chktex 44
+0 & 8 & 5 & 2 & 0 \\ \hline % chktex 44
+0 & 7 & 5 & 3 & 0 \\ \hline % chktex 44
+0 & 9 & 4 & 1 & 0 \\ \hline % chktex 44
+0 & 0 & 0 & 0 & 0 \\ \hline % chktex 44
+\end{array}
+\]
+
+Applying the convolution with \textbf{Stride \(S = 1\)} over this padded image gives the output feature map \(f\):
 \[
 \begin{array}{c} g[k,l] \\ \begin{array}{|c|c|c|} % chktex 44
 \hline % chktex 44
@@ -333,12 +346,7 @@ Consider convolving a \(3 \times 3\) image \(I\) with a \(3 \times 3\) vertical 
 -1 & 0 & 1 \\ \hline % chktex 44
 \end{array} \end{array}
 \quad \otimes \quad
-\begin{array}{c} I[k,l] \\ \begin{array}{|c|c|c|} % chktex 44
-\hline % chktex 44
-8 & 5 & 2 \\ \hline % chktex 44
-7 & 5 & 3 \\ \hline % chktex 44
-9 & 4 & 1 \\ \hline % chktex 44
-\end{array} \end{array}
+\begin{array}{c} I_{\text{padded}} \\ \text{\small(conceptually)} \end{array}
 \quad = \quad
 \begin{array}{c} f[m,n] \\ \begin{array}{|c|c|c|} % chktex 44
 \hline % chktex 44
@@ -359,10 +367,10 @@ g_{\text{flipped}} = \begin{array}{|c|c|c|} % chktex 44
 \end{array}
 \]
 \begin{itemize}[nosep, leftmargin=*]
-    \item \textbf{Center Value \(f[1,1] = 18\):} Flipped kernel overlaps fully with \(I\):
+    \item \textbf{Center Value \(f[1,1] = 18\):} Flipped kernel overlaps fully with the original \(3 \times 3\) image pixels in \(I_{\text{padded}}\):
     \[ (1 \cdot 8 - 1 \cdot 2) + (1 \cdot 7 - 1 \cdot 3) + (1 \cdot 9 - 1 \cdot 1) = 6 + 4 + 8 = 18 \]
     
-    \item \textbf{Top-Left Value \(f[0,0] = -10\):} Flipped kernel overlaps with top-left corner of zero-padded image:
+    \item \textbf{Top-Left Value \(f[0,0] = -10\):} Flipped kernel overlaps with the top-left \(3 \times 3\) corner of \(I_{\text{padded}}\):
     \[ (1 \cdot 0 - 1 \cdot 5) + (1 \cdot 0 - 1 \cdot 5) = -10 \]
 \end{itemize}
 \end{examplebox}
