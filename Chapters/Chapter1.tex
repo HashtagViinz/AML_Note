@@ -130,7 +130,72 @@ The two most classic mathematical formulations are:
     \item \textbf{L1 Regularization (Lasso):} $R(W) = \sum |W|$. It punishes weights constantly. This has the mathematical effect of bringing less important weights exactly to zero, acting as an automatic \textit{Feature Selection} mechanism.
 \end{itemize}
 
-\textit{Note: In deep neural networks, we also use architectural regularizers like Dropout and Batch Normalization.}
+While L1 and L2 regularization act directly on the loss function, modern Deep Learning heavily relies on \textit{architectural} and \textit{stochastic} regularization techniques.
+
+\subsection{Dropout}
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.7\textwidth]{Pictures/dropout.png}\label{fig:dropout}
+\end{figure}
+First introduced by Srivastava et al. (2014), \textbf{Dropout} is a simple yet incredibly effective regularization technique for neural networks.
+\\
+\textbf{How it works:} During training (in each forward pass), we randomly set a fraction of neurons to zero. The probability of dropping a neuron is a hyperparameter, with $p=0.5$ being a common default for fully connected layers.
+
+\begin{itemize}[nosep, leftmargin=*]
+    \item \textbf{Why does it work?} 
+    \begin{enumerate}
+        \item \textbf{Prevents Co-adaptation:} It forces the network to learn a \textit{redundant representation}. If a neuron cannot rely on the presence of specific other neurons, it must learn robust, independent features (e.g., detecting a cat's ear rather than memorizing the whole cat's face).
+        \item \textbf{Ensemble Interpretation:} Dropout can be seen as training a massive ensemble of sub-networks that share parameters. An FC layer with 4096 units has $2^{4096}$ possible binary masks (sub-models)!
+    \end{enumerate}
+\end{itemize}
+
+
+\subsubsection{The Solution: Inverted Dropout}
+Dropping neurons only during \textit{training} means that at \textit{test time} (when all neurons are active), the total output sum will be \textbf{much larger}. For example, if $p=0.5$ (Dropout Rate), the expected output at test time is twice as large. Instead of modifying the network at test time, we apply a \"correction\" directly during training. We define the training activation $h$ as:
+\[ h_{\text{train}} = \frac{\text{mask} \odot x}{1-p} \]
+Let's break down exactly what this formula does:
+\begin{itemize}[leftmargin=*]
+    \item \textbf{The Numerator} ($\text{mask} \odot x$): This is the actual dropout operation. The \texttt{mask} is a matrix of $0$s and $1$s (where a $0$ appears with probability $p$). By performing element-wise multiplication ($\odot$), we force a fraction $p$ of the activations in $x$ to become exactly zero, effectively \"turning off\" those neurons for the current pass.
+    \item \textbf{The Denominator} ($1-p$) \textbf{Pumping part}: This is the \"keep probability\" scaling factor. Since we turned off a fraction $p$ of the neurons, the total sum of the layer's output dropped. By dividing the \textit{surviving} neurons by $(1-p)$, we artificially inflate their values. This mathematically guarantees that the \textit{expected value} of the layer remains identical to what it will be at test time.
+\end{itemize}
+
+Thanks to this trick, at test time the network requires no scaling at all, running at maximum efficiency:
+\[ h_{\text{test}} = x \]
+
+\begin{examplebox}
+\textbf{Numerical Example of Inverted Dropout ($p=0.5$)}
+
+Given an input $x = [10, 20, 30, 40]$ (Sum $= 100$) and dropout rate $p=0.5$:
+
+\textbf{1. Generate Binary Mask:} 
+Random mask with $50\%$ probability of being $0$.
+\[ \text{mask} = [1, 0, 1, 0] \]
+
+\textbf{2. Apply Numerator (Masking):} 
+Element-wise multiplication drops the 2nd and 4th neurons (Sum drops to $40$).
+\[ \text{mask} \odot x = [1, 0, 1, 0] \odot [10, 20, 30, 40] = [10, 0, 30, 0] \]
+
+\textbf{3. Apply Denominator (Scaling):} 
+Divide by $(1-p) = 0.5$ to inflate surviving neurons, restoring signal energy (Sum becomes $80 \approx 100$).
+\[ h_{\text{train}} = \frac{[10, 0, 30, 0]}{0.5} = [20, 0, 60, 0] \]
+\end{examplebox}
+
+
+
+\subsection{The Common Pattern of Modern Regularization}
+Dropout is just one example of a broader paradigm in deep learning regularization. The general framework is:
+\begin{enumerate}
+    \item \textbf{Training:} Add some kind of randomness or noise.
+    \item \textbf{Testing:} Average out (or marginalize) the randomness to produce a deterministic prediction.
+\end{enumerate}
+
+Other notable examples following this pattern include:
+\begin{itemize}[nosep, leftmargin=*]
+    \item \textbf{Batch Normalization:} Injects randomness during training because a sample's normalization depends on the random composition of its minibatch. At test time, global running statistics are used instead.
+    \item \textbf{Data Augmentation:} Randomly crops, flips, or color-jitters training images.
+    \item \textbf{Mixup (Zhang et al., 2018):} Randomly blends the pixels of pairs of training images (e.g., $40\%$ cat, $60\%$ dog) and correspondingly blends their target labels.
+    \item \textbf{Cutout:} Randomly masks out square regions of input images during training.
+\end{itemize}
 
 \subsection{Stochastic Gradient Descent (SGD)}
 From a theoretical standpoint, our objective is to minimize the total loss over the entire dataset, which includes both the data loss and the regularization term:
@@ -160,7 +225,7 @@ Here are some solved exercises demonstrating the Forward and Backward pass step-
 \subsection{Deeper Neural Networks}
 By stacking multiple layers and applying non-linear activation functions, we create multi-layer Neural Networks (e.g., $f = W_2 \max(0, W_1 x)$).
 
-\subsection{The Role of Activation Functions}
+\section{The Role of Activation Functions}
 
 An \textbf{activation function} is a mathematical ``gate'' applied to the output of a layer ($z = Wx+b$) before passing it to the next layer. Its primary role is to introduce \textbf{non-linearity} into the network. 
 
@@ -175,12 +240,57 @@ Some of the most common activation functions include:
     \caption{Illustration Activation Function.}\label{fig:ActivationFunction}
 \end{figure}
 
+\subsection{1. ReLU (Rectified Linear Unit)}
+\textbf{Formula:} $f(x) = \max(0, x)$ \\
+ReLU is the most widely used default activation function in Deep Learning.
 \begin{itemize}[nosep, leftmargin=*]
-    \item \textbf{Sigmoid}: $\sigma(x) = \frac{1}{1 + e^{-x}}$. It squashes numbers to the range $[0, 1]$. Historically popular, but suffers from the \textit{vanishing gradient} problem.
-    \item \textbf{tanh}: Squashes numbers to the range $[-1, 1]$. Like sigmoid, its gradients vanish for very large or very small inputs.
-    \item \textbf{ReLU (Rectified Linear Unit)}: $f(x) = \max(0, x)$. It is the most widely used default choice because it is computationally efficient and greatly mitigates the vanishing gradient problem.
-    \item \textbf{Leaky ReLU} and \textbf{ELU}: Variations of ReLU designed to allow a small, non-zero gradient when $x < 0$ to prevent ``dead neurons''.
+    \item \textbf{Pros:} It does not saturate in the positive region. It is highly computationally efficient (just a thresholding operation) and converges much faster than Sigmoid/Tanh in practice (e.g., roughly $6\times$ faster).
+    \item \textbf{Cons:} Its outputs are not zero-centered. Most importantly, it suffers from the \textbf{``Dead ReLU''} problem: if $x < 0$, the gradient is exactly $0$. If a neuron is pushed into the negative regime by a large weight update, its weights will never update again.
 \end{itemize}
+
+\subsection{2. Leaky ReLU}
+\textbf{Formula:} $f(x) = \max(\alpha x, x)$ (where typically $\alpha = 0.01$) \\
+Designed to solve the ``dead neuron'' problem of standard ReLU.\
+\begin{itemize}[nosep, leftmargin=*]
+    \item \textbf{Pros:} Retains all the benefits of ReLU (no positive saturation, computationally efficient, fast convergence), but the small non-zero slope for negative inputs ensures the neurons will not ``die''.
+\end{itemize}
+
+\subsection{3. ELU (Exponential Linear Units)}
+\textbf{Formula:} $f(x) = x$ if $x > 0$, else $\alpha(e^x - 1)$
+\begin{itemize}[nosep, leftmargin=*]
+    \item \textbf{Pros:} Has all the benefits of ReLU, but produces outputs that are closer to zero-mean. Furthermore, its negative saturation regime adds some robustness to noise compared to the unbounded negative regime of Leaky ReLU.\
+    \item \textbf{Cons:} Computation is more expensive because it requires evaluating the exponential function $e^x$.
+\end{itemize}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.4\textwidth]{Pictures/Elu.png}
+    \caption{Illustration of a ELU}\label{fig:Elu}
+\end{figure}
+
+\subsection{4. GELU (Gaussian Error Linear Unit)}
+\textbf{Formula:} $f(x) = x \cdot \Phi(x)$, where $\Phi(x)$ is the cumulative distribution function (CDF) of the standard normal distribution.
+\begin{itemize}[nosep, leftmargin=*]
+    \item \textbf{Pros:} Exhibits very nice behavior around $0$. Its mathematical smoothness facilitates training in practice. It is widely used in state-of-the-art models like \textbf{GPT-3, BERT}, and most other Transformers.
+    \item \textbf{Cons:} Higher computational cost than ReLU.\ Note that for large negative values, the gradient still tends to $0$.
+\end{itemize}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.4\textwidth]{Pictures/Gelu.png}
+    \caption{Illustration of a GELU}\label{fig:gelu}
+\end{figure}
+
+
+
+\begin{Notebox}
+\textbf{TL;DR \- Practical Guidelines for Activation Functions:}
+\begin{itemize}[nosep, leftmargin=*]
+    \item Use \textbf{ReLU} as your standard default, but be careful with your learning rates to avoid dead neurons.
+    \item Try out \textbf{Leaky ReLU}, \textbf{PReLU} (Parametric ReLU), or \textbf{GELU} to squeeze out some marginal performance gains.
+    \item Generally avoid \textbf{Sigmoid/Tanh} for hidden layers unless specifically required by the architecture (e.g., LSTM gates).
+\end{itemize}
+\end{Notebox}
 
 
 
