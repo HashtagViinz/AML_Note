@@ -97,7 +97,7 @@ We then optimize the model using the \textbf{Categorical Cross-Entropy Loss}, of
 \begin{figure}[htbp]
     \centering
     \includegraphics[width=0.7\textwidth]{Pictures/softmax.png}
-    \caption{Illustration of the Sigmoid function in Logistic Regression.}\label{fig:Softmax}
+    \caption{Abstract representation of logistic regression.}\label{fig:Softmax}
 \end{figure}
 
 \begin{Notebox}
@@ -192,9 +192,37 @@ Dropout is just one example of a broader paradigm in deep learning regularizatio
 Other notable examples following this pattern include:
 \begin{itemize}[nosep, leftmargin=*]
     \item \textbf{Batch Normalization:} Injects randomness during training because a sample's normalization depends on the random composition of its minibatch. At test time, global running statistics are used instead.
-    \item \textbf{Data Augmentation:} Randomly crops, flips, or color-jitters training images.
-    \item \textbf{Mixup (Zhang et al., 2018):} Randomly blends the pixels of pairs of training images (e.g., $40\%$ cat, $60\%$ dog) and correspondingly blends their target labels.
-    \item \textbf{Cutout:} Randomly masks out square regions of input images during training.
+\end{itemize}
+
+\subsection{Data Augmentation (and Advanced Image Regularization)}
+While L1/L2 act on the network's weights and Dropout acts on the activations, Data Augmentation acts directly on the input data. It is a powerful regularization technique that artificially expands the training dataset by applying label-preserving transformations.
+This perfectly embodies the ``Common Pattern'' of modern regularization: we introduce heavy randomness during training, and we average it out (or use fixed standard inputs) during testing.
+
+\subsubsection{Classic Spatial and Color Augmentations}
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Horizontal Flips:} A simple but highly effective transformation for most general object recognition tasks.
+    \item \textbf{Random Crops and Scales:} During training, we extract random patches at random scales. For instance, ResNet resizes the image so its short side is a random length between 256 and 480, then takes a random $224 \times 224$ crop. At test time, this randomness is marginalized by evaluating a fixed set of crops (e.g., 10 crops: 4 corners + center, and their horizontal flips) and averaging the predictions.
+    \item \textbf{Color Jitter:} Randomizing contrast and brightness to make the model invariant to lighting conditions. More complex variants apply PCA to the RGB channels of the training set, adding random offsets along the principal components.
+\end{itemize}
+
+\begin{figure}[htbp]
+    \centering
+    \begin{minipage}{0.48\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{Pictures/catcutout.png}
+        \caption{Example of Cutout.}\label{fig:cutout}
+    \end{minipage}\hfill
+    \begin{minipage}{0.48\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{Pictures/mixup.png}
+        \caption{Example of Mixup.}\label{fig:mixup}
+    \end{minipage}
+\end{figure}
+
+\subsubsection{Advanced Stochastic Augmentations}
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Cutout:} During training, we randomly mask out (set to zero) square regions of the input image. This prevents the network from relying exclusively on a single dominant visual feature (like an animal's face) and forces it to utilize the broader context. At test time, the full unmodified image is used.
+    \item \textbf{Mixup (Zhang et al., 2018):} Instead of modifying a single image, Mixup blends pairs of images and their corresponding labels. If we blend $40\%$ of a cat image and $60\%$ of a dog image, the new target label fed to the loss function becomes exactly \texttt{[0.4 cat, 0.6 dog]}. Testing is performed on standard, unblended images.
 \end{itemize}
 
 \subsection{Stochastic Gradient Descent (SGD)}
@@ -292,6 +320,54 @@ Designed to solve the ``dead neuron'' problem of standard ReLU.\
 \end{itemize}
 \end{Notebox}
 
+\section{Weight Initialization}
+
+Properly initializing the weights of a neural network is crucial. If the initialization is poor, the network might not learn at all due to exploding or vanishing gradients.
+
+\subsection{The Pitfalls of Naive Initialization}
+\begin{itemize}[nosep, leftmargin=*]
+    \item \textbf{Constant Initialization ($W = \text{constant}$):} If all weights are initialized to the same value (e.g., $W=0$), every neuron in a layer will compute the exact same output. During backpropagation, they will all receive the exact same gradient and undergo the exact same update. The network fails to \textit{break symmetry} and cannot learn independent features.
+\end{itemize}
+
+\subsubsection*{Small Random Noise and Vanishing Gradients}
+A common naive approach is to initialize weights with very small random numbers. If you look closely at the code snippet in the image below, you'll see the line \texttt{W = 0.01 * np.random.randn(D,H)}. The function \texttt{np.random.randn(D,H)} (where \texttt{D} is $D_{in}$ and \texttt{H} is $D_{out}$) does not generate a single random number; it generates a \textbf{weight matrix} of dimensions $D_{in} \times D_{out}$. Every element in this matrix is randomly sampled from a standard normal distribution (mean 0, variance 1). By multiplying this entire matrix by the scalar $0.01$, we scale all the initial weights so they have a very small standard deviation of $0.01$. % chktex 36
+
+To understand why this fails in deep networks, we must separate what happens during the Forward Pass from what happens during the Backward Pass:
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=1\textwidth]{Pictures/activation_stats.png}
+    \caption{Distribution of activations $x$ across 6 layers with $W \sim \mathcal{N}(0, 0.01)$ and Tanh.}\label{fig:activation_stats}
+\end{figure}
+
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Step 1: The Forward Pass (Shrinking Activations).}\\
+    The histograms above do \textit{not} show the weights; they show the \textbf{activations} (the input $x$ of each layer). In a neural network, the output of a layer is roughly the input $x$ multiplied by the weights $W$. Because the weights $W$ are tiny fractions (scaled by $0.01$), the resulting output will be strictly smaller than the input. 
+    Since the network is sequential, this effect compounds: you multiply by a tiny $W$, then the next layer multiplies that result by another tiny $W$. This repeated multiplication causes the signal $x$ to exponentially decay. As seen in the histograms, Layer 1 starts with a healthy spread (std = 0.49), but by Layer 6, the activations $x$ have completely collapsed to $0$ (std = 0.05).
+    
+    \item \textbf{Step 2: The Backward Pass (Vanishing Gradients).}\\
+    Why does this destroy learning? Recall the backpropagation formula. For a simple linear layer $y = Wx$, the local gradient of the weights is $\frac{\partial y}{\partial W} = x$. Applying the chain rule, the gradient of the Loss $L$ with respect to the weights $W$ is:
+    \[ \frac{\partial L}{\partial W} = x^T \frac{\partial L}{\partial y} \]
+    The critical insight here is that \textbf{the weight update is directly proportional to the input activations $x$}. Because the forward pass (Step 1) caused the activations $x$ to become $0$, the formula becomes $\frac{\partial L}{\partial W} = 0 \cdot \frac{\partial L}{\partial y} = 0$. The network stops updating its weights, resulting in the \textbf{Vanishing Gradient} problem.
+\end{itemize}
+
+\subsection{Variance Scaling Methods: The Solution}
+To ensure that all neurons start from different states and that the signal flows correctly without vanishing or exploding, we must stop using a fixed, naive scalar like $0.01$. Instead, we scale the initial random weights \textbf{dynamically}, based on the number of inputs ($D_{in}$) a neuron receives. 
+
+By replacing the fixed $0.01$ scalar with a dynamically calculated standard deviation (\text{std}), we can keep the variance of the activations stable across all layers.
+
+\begin{keywordbox}
+\textbf{1. Xavier (Glorot) Initialization}\\
+Designed for symmetric activation functions like \textbf{Tanh} or \textbf{Sigmoid}. The goal is to keep the variance of the activations constant across layers. Weights are sampled from a distribution with standard deviation:
+\[ \text{std} = \frac{1}{\sqrt{D_{in}}} \]
+
+\textbf{2. Kaiming (He) Initialization}\\
+Xavier initialization fails when using \textbf{ReLU}, because ReLU zeroes out exactly half of the output distribution (all negative values), effectively halving the variance. Kaiming initialization corrects this by multiplying the variance by $2$, yielding a standard deviation of:
+\[ \text{std} = \sqrt{\frac{2}{D_{in}}} \]
+This is the standard and highly recommended initialization whenever you use ReLU or Leaky ReLU\@.
+\end{keywordbox}
+
+\textit{Note: For Convolutional Layers, the number of inputs $D_{in}$ is calculated as $\text{kernel\_size}^2 \times \text{input\_channels}$.}
 
 
 
@@ -320,9 +396,98 @@ Designed to solve the ``dead neuron'' problem of standard ReLU.\
 
 
 
+\section{Batch Normalization}
 
+\subsection{The Problem and Basic Intuition}
+The core idea behind Batch Normalization (BN) is simple: if we want our activations to have zero mean\ref{fig:activation_stats} and unit variance to facilitate training, we can simply apply a differentiable function that forces the data into this distribution.
+To achieve this, the layer takes a minibatch of data as input and computes the mean and variance separately for each dimension (or channel) $k$, then normalizes the values using this formula:
 
+\[ \widehat{x}^{(k)} = \frac{x^{(k)} - \text{E}[x^{(k)}]}{\sqrt{\text{Var}[x^{(k)}]}} \]
 
+Let's analyze each component of the formula:
+\begin{itemize}[nosep, leftmargin=*]
+    \item $x^{(k)}$: The activation value for the $k$-th dimension (or channel) of our current input, before normalization.
+    \item $\text{E}[x^{(k)}]$: The \textit{expected value} (i.e., the \textbf{mean} $\mu$) computed along dimension $k$ over all elements in the current minibatch.
+    \item $\text{Var}[x^{(k)}]$: The \textbf{variance} ($\sigma^2$) computed along dimension $k$ over the entire minibatch. The square root of the variance gives us the standard deviation. \textit{(Note: in practice, a tiny value $\epsilon$ is often added to the variance inside the square root to avoid division by zero).}
+    \item $\widehat{x}^{(k)}$: The new normalized value, which now belongs to a distribution with a mean of 0 and a variance of 1.
+\end{itemize}
+
+\subsection{Learnable Parameters (Scale and Shift)}
+Strictly forcing the data to have a mean of 0 and a variance of 1 might prove to be too rigid of a constraint, limiting the expressive power of the network. 
+To solve this problem, immediately after normalization, two parameters are applied that the network learns during training: $\gamma$ (for scale) and $\beta$ (for shift). The final output of the layer thus becomes:
+\[ y^{(k)} = \gamma^{(k)} \widehat{x}^{(k)} + \beta^{(k)} \]
+
+This step guarantees flexibility: if the network learns that strict normalization at that specific point is counterproductive, it can learn to set the weights such that $\gamma = \sqrt{\text{Var}[x^{(k)}]}$ and $\beta = \text{E}[x^{(k)}]$, allowing the layer to recover exactly the original identity function ($y = x$).
+
+\subsection{Architectural Placement}
+Standard practice dictates inserting the Batch Normalization layer immediately after linear operations (such as Fully Connected layers or Convolutions) and \textbf{immediately before applying the non-linearity} (such as ReLU or tanh).
+\begin{keywordbox}
+\[ \text{FC / Conv} \longrightarrow \textbf{Batch Normalization} \longrightarrow \text{Activation (e.g., ReLU)} \]
+\end{keywordbox}
+
+\subsection{Crucial Difference between Training and Test}
+This technique behaves drastically differently between the training phase and the inference phase, an aspect that is often a source of bugs in code:
+
+\begin{itemize}[nosep, leftmargin=*]
+    \item \textbf{Training Phase:} The estimates of mean and variance depend entirely on the minibatch of data currently passing through the network.
+    \item \textbf{Test Phase:} Since it cannot depend on the statistics of a minibatch (which during testing could be just a single isolated element), the network uses a fixed estimate calculated via a \textit{running average} of the values recorded during training.
+\end{itemize}
+
+By using fixed values for mean and variance, BN effectively becomes a simple linear operator. This results in \textbf{zero overhead} during the test phase, as the operation can be mathematically fused into the preceding convolutional or fully connected layer.
+
+\subsection{Overall Benefits}
+The introduction of Batch Normalization guarantees:
+\begin{itemize}[nosep, leftmargin=*]
+    \item Deep networks are much easier to train thanks to a \textbf{better gradient flow}.
+    \item The ability to use \textbf{higher learning rates}, leading to faster convergence.
+    \item \textbf{Greater robustness} of the network compared to weight initialization methods.
+    \item A secondary effect of \textbf{regularization} on the model during the training phase (caused by the noise introduced by the minibatch estimates).
+\end{itemize}
+
+\subsection{Alternative Normalization Techniques}
+The difference between various normalization methods lies exclusively in the \textbf{dimensions over which they choose to aggregate the data} to calculate the mean ($\mu$) and variance ($\sigma$).
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=1\textwidth]{Pictures/normalization_methods.png}
+    \caption{Comparison of different normalization methods. The blue blocks indicate the group of values that are aggregated together to compute a single mean and variance.}
+    \label{fig:normalization_methods}
+\end{figure}
+
+In the three-dimensional cube representation (Figure~\ref{fig:normalization_methods}), the axes represent the data tensors flowing through the network:
+\begin{itemize}[nosep, leftmargin=*]
+    \item \textbf{N:} The batch dimension (the number of images processed together).
+    \item \textbf{C:} The channels (the feature maps, which for instance start as RGB channels).
+    \item \textbf{H, W:} The spatial dimensions (Height and Width of the map).
+\end{itemize}
+The \textbf{blue blocks} indicate the group of values that are taken and ``squashed'' together to compute a single mean and variance. Here is the breakdown of the different methods, their differences, and their use cases:
+
+\subsubsection{Batch Norm (BN)}
+\begin{itemize}[nosep, leftmargin=*]
+    \item \textbf{Visually:} The blue block spans the entire N axis (the whole batch) and the entire H,W space, but is often restricted to a single slice on the C axis.
+    \item \textbf{How it works:} Computes the mean and variance for \textbf{each individual channel}, averaging across \textit{all} images currently in the batch and all spatial pixels.
+    \item \textbf{When to use:} It is the standard for classic Convolutional Neural Networks (CNNs).
+\end{itemize}
+
+\subsubsection{Layer Norm (LN)}
+\begin{itemize}[nosep, leftmargin=*]
+    \item \textbf{Visually:} The blue block spans the entire C axis (all channels) and the H,W space, but is often restricted to a single slice on the N axis.
+    \item \textbf{How it works:} Computes the mean and variance for \textbf{each individual image}, mixing and aggregating data from \textit{all} its channels and pixels simultaneously.
+    \item \textbf{When to use:} Highly recommended for Recurrent Neural Networks (RNNs) and Transformers. Unlike BN, it has the major advantage of maintaining exactly the same mathematical behavior during both training and testing phases.
+\end{itemize}
+
+\subsubsection{Instance Norm (IN)}
+\begin{itemize}[nosep, leftmargin=*]
+    \item \textbf{Visually:} The blue block is very narrow: it takes a single channel (C) of a single image (N), aggregating exclusively along the H,W space.
+    \item \textbf{How it works:} Normalizes \textbf{each single channel of each single image} entirely independently and isolated from other channels and images.
+    \item \textbf{When to use:} Maintains the same behavior in train and test. Predominantly used in creative or generative tasks, such as texture synthesis and style transfer networks (e.g., making a photo look like a Van Gogh painting).
+\end{itemize}
+
+\subsubsection{Group Norm (GN)}
+\begin{itemize}[nosep, leftmargin=*]
+    \item \textbf{Visually:} The blue block takes a \textbf{limited group of channels} (a portion of the C axis) for a single image (N), aggregating along those channels and the H,W space.
+    \item \textbf{How it works:} It serves as a compromise between Layer Norm and Instance Norm. Instead of normalizing across \textit{all} channels together (risking the loss of feature independence like LN) or one channel at a time (like IN), Group Norm divides the channel axis into ``subgroups''. It then computes the mean and variance within each group for every single image independently.
+\end{itemize}
 
 \section{Recap on Convolutional Neural Networks (CNNs)}
 \begin{figure}[htbp]
@@ -557,5 +722,39 @@ Understanding what deep CNNs learn requires visualization techniques (e.g., Deco
     \centering
     \includegraphics[width=0.5\textwidth]{Pictures/in_out.png}\label{fig:inout}
 \end{figure}
+
+
+
+
+
+
+
+\section{Transfer Learning}
+
+\subsection{The Fundamental Concept (Why use it?)}
+Convolutional Neural Networks (CNNs) require a massive amount of data to be trained from scratch effectively. If your target dataset is small (e.g., less than 1 million images), training a deep architecture from scratch would inevitably lead to severe overfitting.
+The standard solution is \textbf{Transfer Learning}: taking a ``Source'' model that has already been trained on a gigantic dataset (e.g., ImageNet, which contains millions of images across thousands of categories) and ``transferring'' the learned knowledge to a ``Target'' model applied to your specific, smaller dataset (e.g., CIFAR-10 or a custom medical imaging dataset).
+
+\subsection{Practical Implementation (The Mechanism)}
+Taking a standard network like VGG-11 as an example, the transfer learning procedure generally involves two main steps:
+
+\begin{itemize}[leftmargin=*]
+    \item \textbf{1. Keeping the Convolutional Layers (Feature Extractors):} The early and middle layers of the pre-trained network are preserved intact. Their purpose is to act as \textit{feature extractors}. Since the network has already learned to recognize lines, edges, textures, and complex shapes from the source dataset, these visual characteristics are treated as ``universal'' and highly useful for almost any downstream visual task.
+    \item \textbf{2. Replacing the Classifier:} The final layers of the network (the Fully Connected or ``classifier'' layers) are removed. In their place, a new set of Fully Connected layers is appended. Only these new layers (and optionally a few of the deeper convolutional layers) are trained specifically to classify the categories of the new target dataset.
+\end{itemize}
+
+\subsection{Pervasiveness: The Norm, Not the Exception}
+Transfer Learning is ubiquitous and is considered the absolute standard in modern deep learning development. Its applications extend far beyond simple image classification:
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Object Detection:} Advanced architectures like Fast R-CNN utilize a CNN pre-trained on ImageNet as a foundational backbone to extract features from the entire image before predicting bounding boxes.
+    \item \textbf{Image Captioning:} A pre-trained CNN is often fused with a Recurrent Neural Network (RNN) or Transformer, where the CNN provides the rich visual feature embeddings necessary for the text generation model.
+\end{itemize}
+
+\begin{keywordbox}
+\textbf{The ``Model Zoo''} \\
+In practice, you do not need supercomputers or months of computation time to train the initial source model. All major Deep Learning frameworks (such as PyTorch and TensorFlow) provide a \textbf{Model Zoo} (e.g., \texttt{torchvision.models} in PyTorch). 
+
+These libraries host the pre-trained weights of famous state-of-the-art architectures (VGG, ResNet, DenseNet, etc.) trained by large research institutions. They are ready to be downloaded with a single line of code and adapted via transfer learning to your specific task.
+\end{keywordbox}
 
 
