@@ -6,7 +6,7 @@
 
 \section{Introduction to Sequence Modeling}
 
-Standard feedforward architectures (such as multi-layer perceptrons and traditional convolutional neural networks) operate strictly under a \textbf{one-to-one} paradigm: a fixed-dimensional input vector $x \in \mathbb{R}^D$ is mapped to a fixed-dimensional output $y \in \mathbb{R}^K$. While effective for static tasks like single-image classification, this formulation fails when dealing with data that unfolds over time or possesses an intrinsic sequential nature, such as text, audio, video streams, or financial time series.
+Standard feedforward architectures (such as multi-layer perceptrons and traditional convolutional neural networks) operate strictly under a \textbf{one-to-one} paradigm: a fixed-dimensional input vector $x \in \mathbb{R}^D$ is mapped to a fixed-dimensional output $y \in \mathbb{R}^K$. While effective for static tasks like single-image classification, this formulation fails when dealing with data that unfolds over time or possesses an intrinsic sequential nature, such as text, audio, video streams, or financial time series. This chapter covers sequence modeling paradigms, recurrent neural networks, and gating mechanisms based on the course lecture slides~\cite{galasso2025seqmodels}.
 
 \begin{keywordbox}
 \textbf{The Sequence Modeling Challenge} \\
@@ -107,12 +107,12 @@ To overcome this limitation, TCNs introduce \textbf{Dilated Causal Convolutions}
 \begin{figure}[htbp]
     \centering
     \includegraphics[width=0.92\textwidth]{Pictures/tcn_dilated.png}
-    \caption{Architectural comparison between standard causal convolutions and dilated causal convolutions (Bai et al., 2018). Left: Standard causal convolution where receptive field grows linearly with depth. Right: Dilated causal convolution with exponentially doubling dilation factors ($d=1, 2, 4$), achieving exponential receptive field expansion without gaps in the input history.}\label{fig:tcn_dilated}
+    \caption{Architectural comparison between standard causal convolutions and dilated causal convolutions (Bai et al.~\cite{bai2018empirical}). Left: Standard causal convolution where receptive field grows linearly with depth. Right: Dilated causal convolution with exponentially doubling dilation factors ($d=1, 2, 4$), achieving exponential receptive field expansion without gaps in the input history.}\label{fig:tcn_dilated}
 \end{figure}
 
 \subsubsection{Comparative Architectural Analysis: Standard vs. Dilated Causal Convolutions}
 
-Figure~\ref{fig:tcn_dilated} directly visualizes the paradigm shift from standard causal convolutions (left) to the dilated architecture proposed by Bai et al.\ (right):
+Figure~\ref{fig:tcn_dilated} directly visualizes the paradigm shift from standard causal convolutions (left) to the dilated architecture proposed by Bai et al.~\cite{bai2018empirical} (right):
 
 \begin{itemize}[leftmargin=*]
     \item \textbf{Left Panel --- Standard Causal Convolution (Linear Interaction Distance):}
@@ -253,12 +253,12 @@ In a synchronized recurrence, the network ingests an input $x_t$ and immediately
 \end{itemize}
 
 \subsubsection{Sequence-to-Sequence: Many-to-One + One-to-Many (Slides 45--46)}
-To resolve these limitations, Sutskever et al. (2014) proposed the \textbf{Sequence-to-Sequence (Seq2Seq)} framework, decomposing the task into two decoupled recurrent modules operating in cascade, illustrated in Figure~\ref{fig:seq2seq_arch}:
+To resolve these limitations, Sutskever et al.~\cite{sutskever2014sequence} (and Cho et al.~\cite{cho2014learning}) proposed the \textbf{Sequence-to-Sequence (Seq2Seq)} framework, decomposing the task into two decoupled recurrent modules operating in cascade, illustrated in Figure~\ref{fig:seq2seq_arch}:
 
 \begin{figure}[htbp]
     \centering
     \includegraphics[width=0.92\textwidth]{Pictures/seq2seq_architecture.png}
-    \caption{Sequence-to-Sequence architecture (Sutskever et al., 2014, from course slides). The Encoder (Many-to-One with weights $W_1$) compresses the source sequence into bottleneck state $h_T$. The Decoder (One-to-Many with weights $W_2$) generates the target sequence from $h_T$ until an end-of-sequence token is emitted.}\label{fig:seq2seq_arch}
+    \caption{Sequence-to-Sequence architecture (Sutskever et al.~\cite{sutskever2014sequence}, from course slides). The Encoder (Many-to-One with weights $W_1$) compresses the source sequence into bottleneck state $h_T$. The Decoder (One-to-Many with weights $W_2$) generates the target sequence from $h_T$ until an end-of-sequence token is emitted.}\label{fig:seq2seq_arch}
 \end{figure}
 
 \begin{enumerate}[leftmargin=*]
@@ -279,7 +279,7 @@ The encoder weights $W_1$ and decoder weights $W_2$ are explicitly decoupled:
 
 \subsection{Case Study: Character-Level Language Modeling}
 
-To see an RNN in action, consider a character-level language model trained to predict the sequence \textit{``hello''} from a vocabulary of four letters: $\{h, e, l, o\}$ (Slides 47--53). At each step, the network receives the current character and predicts a probability distribution over the vocabulary for the next character.
+To see an RNN in action, consider a character-level language model trained to predict the sequence \textit{``hello''} from a vocabulary of four letters: $\{h, e, l, o\}$ (Slides 47--53; Karpathy~\cite{karpathy2015unreasonable}). At each step, the network receives the current character and predicts a probability distribution over the vocabulary for the next character.
 
 \subsubsection{Training Phase: Teacher Forcing}
 
@@ -337,7 +337,7 @@ The generation proceeds step by step:
 
 \subsection{Case Study: Image Captioning (CNN + RNN)}
 
-Another foundational application of recurrent models is \textbf{Image Captioning} (Slides 112--123): given an input image, the network must generate a fluent sentence describing its visual content. This represents a canonical \textbf{One-to-Many} task that unifies Computer Vision (CNN) and Natural Language Processing (RNN).
+Another foundational application of recurrent models is \textbf{Image Captioning} (Slides 112--123, pioneered by Vinyals et al.~\cite{vinyals2015show}, Karpathy and Fei-Fei~\cite{karpathy2015deep}, and Donahue et al.~\cite{donahue2015long}): given an input image, the network must generate a fluent sentence describing its visual content. This represents a canonical \textbf{One-to-Many} task that unifies Computer Vision (CNN) and Natural Language Processing (RNN).
 
 \subsubsection{How CNN and RNN Interact}
 
@@ -388,7 +388,7 @@ At each step, the hidden state $h_t$ projects raw scores (logits) $y_t$, which a
 
 \section{Backpropagation Through Time and Gradient Flow}
 
-Training an RNN requires computing the gradient of the total loss $L$ with respect to the shared weight matrices $W$. This process is known as \textbf{Backpropagation Through Time (BPTT)}.
+Training an RNN requires computing the gradient of the total loss $L$ with respect to the shared weight matrices $W$. This process is known as \textbf{Backpropagation Through Time (BPTT)}~\cite{werbos1990backpropagation} (Slides 141--144).
 
 \subsection{BPTT and Gradient Flow in Vanilla RNNs}
 
@@ -414,7 +414,7 @@ Backpropagating gradients across multiple time steps involves repeated multiplic
     \item \textbf{Exploding Gradients (Largest singular value $> 1$):}
     Gradients grow exponentially with sequence length, causing numerical instability.
     
-    \textbf{Solution:} \textit{Gradient Clipping}. When the gradient norm $\|g\|$ exceeds a threshold $\tau$, it is clipped:
+    \textbf{Solution:} \textit{Gradient Clipping} (Pascanu et al., 2013)~\cite{pascanu2013difficulty}. When the gradient norm $\|g\|$ exceeds a threshold $\tau$, it is clipped:
     \[ g \longleftarrow \frac{\tau}{\|g\|} g \quad \text{if } \|g\| > \tau \]
     
     \item \textbf{Vanishing Gradients (Largest singular value $< 1$):}
@@ -447,7 +447,7 @@ The strengths and limitations of Vanilla RNNs can be summarized as follows (Slid
 
 \section{Long Short-Term Memory}
 
-To resolve the fatal vanishing gradient problem inherent in Vanilla RNNs, Hochreiter and Schmidhuber (1997) introduced the \textbf{Long Short-Term Memory (LSTM)} network.
+To resolve the fatal vanishing gradient problem inherent in Vanilla RNNs, Hochreiter and Schmidhuber~\cite{hochreiter1997long} introduced the \textbf{Long Short-Term Memory (LSTM)} network.
 
 \subsection{The Dual-State Architecture}
 

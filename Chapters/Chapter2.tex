@@ -6,7 +6,7 @@
 
 \section{Image Representation and the Imaging Process}
 
-In computer vision, the fundamental objective is to interpret and reason about visual inputs. Digital images are typically formed via an optical camera model (such as the pinhole camera model) and subsequently digitized, as shown in Figure~\ref{fig:pinhole}.
+In computer vision, the fundamental objective is to interpret and reason about visual inputs. Digital images are typically formed via an optical camera model (such as the pinhole camera model) and subsequently digitized, as shown in Figure~\ref{fig:pinhole}. This chapter explores convolutional architectures, classical vision backbones, and data augmentation based on the course lecture slides~\cite{galasso2025convnets}.
 
 \begin{figure}[htbp]
     \centering
@@ -317,8 +317,8 @@ While weight decay acts on model parameters and Dropout acts on activations, \te
 
 \subsection{Advanced Stochastic Augmentations}
 \begin{itemize}[leftmargin=*]
-    \item \textbf{Cutout:} During training, square image patches are randomly masked out (set to zero). This forces the network to avoid over-relying on a single dominant feature (such as an animal's face) and learn distributed contextual cues. Unmodified images are evaluated at test time.
-    \item \textbf{Mixup (Zhang et al., 2018):} Blends pairs of images and their corresponding one-hot labels linearly. For instance, blending $40\%$ of a cat image with $60\%$ of a dog image produces a target training label of $[0.4\,\text{cat}, 0.6\,\text{dog}]$. At test time, standard unblended images are used.
+    \item \textbf{Cutout:} Introduced by DeVries and Taylor~\cite{devries2017improved}, square image patches are randomly masked out (set to zero) during training. This forces the network to avoid over-relying on a single dominant feature (such as an animal's face) and learn distributed contextual cues. Unmodified images are evaluated at test time.
+    \item \textbf{Mixup:} Proposed by Zhang et al.~\cite{zhang2017mixup}, blends pairs of images and their corresponding one-hot labels linearly. For instance, blending $40\%$ of a cat image with $60\%$ of a dog image produces a target training label of $[0.4\,\text{cat}, 0.6\,\text{dog}]$. At test time, standard unblended images are used.
 \end{itemize}
 
 ---
@@ -331,7 +331,7 @@ Training deep Convolutional Neural Networks from scratch requires massive datase
 The solution is \textbf{Transfer Learning}: leveraging a \textbf{Source model} pre-trained on a gigantic dataset (e.g., ImageNet) and transferring its learned visual representations to a \textbf{Target model} for a specific, smaller task.
 
 \subsection{Practical Implementation}
-Using standard backbones like VGG or ResNet, transfer learning proceeds in two stages:
+Using standard backbones like VGG~\cite{simonyan2014very} or ResNet~\cite{he2016deep}, transfer learning proceeds in two stages:
 \begin{itemize}[leftmargin=*]
     \item \textbf{1. Preserving Convolutional Feature Extractors:} Early and middle convolutional layers are kept frozen. They act as universal feature extractors, having already learned edge, texture, and shape primitives common to all natural visual scenes.
     \item \textbf{2. Replacing the Classification Head:} The final Fully Connected layers are removed and replaced with new layers configured for the target dataset's classes. Only this new head (and optionally fine-tuned upper conv layers) is trained.

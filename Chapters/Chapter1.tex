@@ -6,11 +6,11 @@
 
 \section{Introduction to the Core Concepts}
 
-The contents of this chapter establish the theoretical and mathematical foundations of modern deep learning, largely based on the introductory modules of the course~\cite{galasso2025recap}.
+The contents of this chapter establish the theoretical and mathematical foundations of modern deep learning, largely based on the introductory modules of the course~\cite{galasso2025nn,galasso2025training}.
 
 \begin{keywordbox}
 \begin{itemize}[nosep, leftmargin=*]
-\item According to Arthur Samuel (1959), \textbf{Machine Learning} is the field of study that gives computers the ability to learn without being explicitly programmed. 
+\item According to Arthur Samuel~\cite{samuel1959some}, \textbf{Machine Learning} is the field of study that gives computers the ability to learn without being explicitly programmed. 
 
 \item Tom Mitchell (1998) defined the well-posed learning problem: a computer program is said to learn from experience $E$ with respect to some task $T$ and some performance measure $P$, if its performance on $T$, as measured by $P$, improves with experience $E$.
 \end{itemize}
@@ -102,7 +102,7 @@ By stacking multiple layers and applying non-linear activation functions, we con
 This hierarchical representation enables the network to learn rich, non-linear representations from raw data.
 
 \subsection{Backpropagation}
-To train a deep network, we compute the gradient of the loss with respect to all parameters using the \textbf{Backpropagation} algorithm, which systematically applies the multivariable chain rule from the output back to the inputs (backward pass).
+To train a deep network, we compute the gradient of the loss with respect to all parameters using the \textbf{Backpropagation} algorithm~\cite{rumelhart1986learning}, which systematically applies the multivariable chain rule from the output back to the inputs (backward pass).
 
 \begin{Notebox}
 \textbf{Backpropagation with Matrices:} When inputs and weights are vectors or matrices, local gradients become \textit{Jacobian matrices}. However, Jacobians are often sparse. Instead of explicitly forming them, practical frameworks use implicit vector-Jacobian products. A crucial dimensional consistency check to remember: the downstream gradient $\frac{\partial L}{\partial x}$ \textbf{always has the exact same shape} as the tensor $x$!
@@ -140,13 +140,14 @@ ReLU is the classic default activation function across deep learning architectur
 
 \subsection{Leaky ReLU}
 \textbf{Formula:} $f(x) = \max(\alpha x, x)$ (where typically $\alpha = 0.01$) \\
-Designed specifically to prevent the ``dead neuron'' problem of standard ReLU\@.
+Introduced by Maas et al.~\cite{maas2013rectifier}, Leaky ReLU is designed specifically to prevent the ``dead neuron'' problem of standard ReLU\@.
 \begin{itemize}[nosep, leftmargin=*]
     \item \textbf{Pros:} Retains all the computational advantages of ReLU (no positive saturation, fast evaluation), while the small non-zero slope for negative inputs guarantees that neurons will never permanently die.
 \end{itemize}
 
 \subsection{ELU (Exponential Linear Units)}
-\textbf{Formula:} $f(x) = x$ if $x > 0$, else $\alpha(e^x - 1)$
+\textbf{Formula:} $f(x) = x$ if $x > 0$, else $\alpha(e^x - 1)$ \\
+Proposed by Clevert et al.~\cite{clevert2015fast}, ELU is defined to retain ReLU advantages while shifting mean activations toward zero:
 \begin{itemize}[nosep, leftmargin=*]
     \item \textbf{Pros:} Inherits the benefits of ReLU, but produces outputs with a mean closer to zero. Its smooth negative saturation regime adds noise robustness compared to unbounded negative regimes.
     \item \textbf{Cons:} More computationally demanding because evaluating the exponential function $e^x$ is slower than simple comparisons.
@@ -159,7 +160,7 @@ Designed specifically to prevent the ``dead neuron'' problem of standard ReLU\@.
 \end{figure}
 
 \subsection{GELU (Gaussian Error Linear Unit)}
-\textbf{Formula:} $f(x) = x \cdot \Phi(x)$, where $\Phi(x)$ is the cumulative distribution function (CDF) of the standard normal distribution.
+\textbf{Formula:} $f(x) = x \cdot \Phi(x)$, where $\Phi(x)$ is the cumulative distribution function (CDF) of the standard normal distribution. Introduced by Hendrycks and Gimpel~\cite{hendrycks2016gaussian}:
 \begin{itemize}[nosep, leftmargin=*]
     \item \textbf{Pros:} Exhibits smooth probabilistic gating behavior around $0$. Its continuous curvature facilitates optimization in state-of-the-art architectures, making it the standard choice in \textbf{GPT, BERT}, and modern Vision Transformers.
     \item \textbf{Cons:} Slightly higher computational cost than ReLU\@.
@@ -220,7 +221,7 @@ To guarantee that signal variance remains stable across deep layers, we scale in
 Designed for symmetric, zero-centered activation functions like \textbf{Tanh} or \textbf{Sigmoid}. The variance of activations is kept constant across layers by drawing weights from a distribution with standard deviation:
 \[ \text{std} = \frac{1}{\sqrt{D_{in}}} \]
 
-\textbf{2. Kaiming (He) Initialization}\\
+\textbf{2. Kaiming (He) Initialization (He et al., 2015)~\cite{he2015delving}}\\
 Xavier initialization fails with \textbf{ReLU} because ReLU zeroes out all negative values, effectively halving the variance at each step. Kaiming initialization compensates by doubling the variance, setting the standard deviation to:
 \[ \text{std} = \sqrt{\frac{2}{D_{in}}} \]
 This is the standard and mandatory initialization when training deep ReLU networks.
@@ -270,7 +271,7 @@ Classic mathematical penalties include:
     \caption{Illustration of Dropout during training.}\label{fig:dropout}
 \end{figure}
 
-Introduced by Srivastava et al. (2014), \textbf{Dropout} is a stochastic regularization technique where individual neurons are randomly deactivated during training with probability $p$ (commonly $p=0.5$).
+Introduced by Srivastava et al.~\cite{srivastava2014dropout}, \textbf{Dropout} is a stochastic regularization technique where individual neurons are randomly deactivated during training with probability $p$ (commonly $p=0.5$).
 \begin{itemize}[nosep, leftmargin=*]
     \item \textbf{Prevents Co-adaptation:} Neurons cannot rely on the specific activations of neighboring units, forcing them to learn robust, self-reliant features.
     \item \textbf{Ensemble Effect:} Dropout implicitly trains an exponential ensemble of shared-weight subnetworks ($2^N$ sub-architectures for an $N$-neuron layer).
@@ -306,7 +307,7 @@ Dropout illustrates the universal recipe of modern deep learning regularization:
 To stabilize signal distributions and accelerate optimization in deep networks, activations are explicitly normalized across intermediate layers.
 
 \subsection{Batch Normalization}
-Batch Normalization (BN) normalizes activations across the minibatch dimension, forcing each feature channel $k$ to zero mean and unit variance:
+Introduced by Ioffe and Szegedy~\cite{ioffe2015batch}, Batch Normalization (BN) normalizes activations across the minibatch dimension, forcing each feature channel $k$ to zero mean and unit variance:
 \[ \widehat{x}^{(k)} = \frac{x^{(k)} - \text{E}[x^{(k)}]}{\sqrt{\text{Var}[x^{(k)}] + \epsilon}} \]
 where $\text{E}[x^{(k)}]$ and $\text{Var}[x^{(k)}]$ are the minibatch mean and variance, and $\epsilon$ prevents division by zero.
 
@@ -329,16 +330,16 @@ During training, statistics are calculated over the current minibatch. During in
 The choice among normalization methods depends on the axes across which statistics are aggregated (Figure~\ref{fig:normalization_methods}):
 
 \subsubsection{Batch Norm (BN)}
-Aggregates across the batch dimension $N$ and spatial dimensions $(H, W)$ independently for each channel $C$. Ideal for vision models with large minibatches.
+Aggregates across the batch dimension $N$ and spatial dimensions $(H, W)$ independently for each channel $C$~\cite{ioffe2015batch}. Ideal for vision models with large minibatches.
 
 \subsubsection{Layer Norm (LN)}
-Aggregates across all channels $C$ and spatial dimensions for each individual sample $N$. Independent of batch size, making it the standard for RNNs and Transformers.
+Proposed by Ba et al.~\cite{ba2016layer}, LN aggregates across all channels $C$ and spatial dimensions for each individual sample $N$. Independent of batch size, making it the standard for RNNs and Transformers.
 
 \subsubsection{Instance Norm (IN)}
-Aggregates strictly across spatial dimensions $(H, W)$ for each single channel of each single sample. Widely used in generative style transfer.
+Proposed by Ulyanov et al.~\cite{ulyanov2016instance}, IN aggregates strictly across spatial dimensions $(H, W)$ for each single channel of each single sample. Widely used in generative style transfer.
 
 \subsubsection{Group Norm (GN)}
-Divides the channel dimension $C$ into distinct groups and aggregates across each group per sample. Provides batch-size independence while preserving channel specialization.
+Introduced by Wu and He~\cite{wu2018group}, GN divides the channel dimension $C$ into distinct groups and aggregates across each group per sample. Provides batch-size independence while preserving channel specialization.
 
 ---
 

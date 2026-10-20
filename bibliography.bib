@@ -1,42 +1,294 @@
-@book{book_key,
-	address = {City},
-	publisher = {Publisher},
-	author = {Smith, John},
-	title = {Book title},
-	year = {2012},
-	volume = {3},
-	series = {2},
-	edition = {1},
-	pages = {123--200},
-	month = {January}
-}
+% ==============================================================================
+% Advanced Machine Learning - Bibliography File
+% ==============================================================================
 
-@article{article_key,
-	address = {City},
-	publisher = {Publisher},
-	author = {Smith, James},
-	title = {Article title},
-	year = {2013},
-	volume = {14},
-	number = {6},
-	pages = {1--8},
-	month = {March}
-}
-
-@article{ahmad2023deep,
-  title={Deep learning models for cloud, edge, fog, and IoT computing paradigms: Survey, recent advances, and future directions},
-  author={Ahmad, Shahnawaz and Shakeel, Iman and Mehfuz, Shabana and Ahmad, Javed},
-  journal={Computer Science Review},
-  volume={49},
-  pages={100568},
-  year={2023},
-  publisher={Elsevier}
-}
+% ------------------------------------------------------------------------------
+% Course Lecture Slides (Prof. Fabio Galasso, Sapienza University of Rome)
+% ------------------------------------------------------------------------------
 
 @misc{galasso2025recap,
   author       = {Fabio Galasso},
   title        = {Recap on Image Classification and Neural Networks},
-  howpublished = {Advanced Machine Learning Course Slides, Sapienza Università di Roma},
+  howpublished = {Advanced Machine Learning Course Slides, Sapienza Universit{\`a} di Roma},
   year         = {2025},
   month        = {9}
+}
+
+@misc{galasso2025nn,
+  author       = {Fabio Galasso},
+  title        = {Recap on Image Classification and Neural Networks},
+  howpublished = {Lecture Slides, Advanced Machine Learning and Computer Vision, Sapienza Universit{\`a} di Roma},
+  year         = {2025}
+}
+
+@misc{galasso2025training,
+  author       = {Fabio Galasso},
+  title        = {Training Neural Networks},
+  howpublished = {Lecture Slides, Advanced Machine Learning and Computer Vision, Sapienza Universit{\`a} di Roma},
+  year         = {2025}
+}
+
+@misc{galasso2025convnets,
+  author       = {Fabio Galasso},
+  title        = {Recap on Convolutional Neural Networks},
+  howpublished = {Lecture Slides, Advanced Machine Learning and Computer Vision, Sapienza Universit{\`a} di Roma},
+  year         = {2025}
+}
+
+@misc{galasso2025seqmodels,
+  author       = {Fabio Galasso},
+  title        = {Sequence Models},
+  howpublished = {Lecture Slides, Advanced Machine Learning and Computer Vision, Sapienza Universit{\`a} di Roma},
+  year         = {2025}
+}
+
+% ------------------------------------------------------------------------------
+% Chapter 1 Foundations: Optimization, Regularization, Activations, Normalization
+% ------------------------------------------------------------------------------
+
+@article{samuel1959some,
+  author    = {Samuel, Arthur L.},
+  title     = {Some Studies in Machine Learning Using the Game of Checkers},
+  journal   = {IBM Journal of Research and Development},
+  volume    = {3},
+  number    = {3},
+  pages     = {210--229},
+  year      = {1959}
+}
+
+@article{rumelhart1986learning,
+  author    = {Rumelhart, David E. and Hinton, Geoffrey E. and Williams, Ronald J.},
+  title     = {Learning representations by back-propagating errors},
+  journal   = {Nature},
+  volume    = {323},
+  number    = {6088},
+  pages     = {533--536},
+  year      = {1986}
+}
+
+@article{kingma2014adam,
+  author    = {Kingma, Diederik P. and Ba, Jimmy},
+  title     = {Adam: A Method for Stochastic Optimization},
+  journal   = {arXiv preprint arXiv:1412.6980},
+  year      = {2014}
+}
+
+@article{srivastava2014dropout,
+  author    = {Srivastava, Nitish and Hinton, Geoffrey and Krizhevsky, Alex and Sutskever, Ilya and Salakhutdinov, Ruslan},
+  title     = {Dropout: A simple way to prevent neural networks from overfitting},
+  journal   = {The Journal of Machine Learning Research},
+  volume    = {15},
+  number    = {1},
+  pages     = {1929--1958},
+  year      = {2014}
+}
+
+@inproceedings{ioffe2015batch,
+  author    = {Ioffe, Sergey and Szegedy, Christian},
+  title     = {Batch Normalization: Accelerating Deep Network Training by Reducing Internal Covariate Shift},
+  booktitle = {International Conference on Machine Learning (ICML)},
+  pages     = {448--456},
+  year      = {2015}
+}
+
+@article{ba2016layer,
+  author    = {Ba, Jimmy Lei and Kiros, Jamie Ryan and Hinton, Geoffrey E.},
+  title     = {Layer Normalization},
+  journal   = {arXiv preprint arXiv:1607.06450},
+  year      = {2016}
+}
+
+@article{ulyanov2016instance,
+  author    = {Ulyanov, Dmitry and Vedaldi, Andrea and Lempitsky, Victor},
+  title     = {Instance Normalization: The Missing Ingredient for Fast Stylization},
+  journal   = {arXiv preprint arXiv:1607.08022},
+  year      = {2016}
+}
+
+@inproceedings{wu2018group,
+  author    = {Wu, Yuxin and He, Kaiming},
+  title     = {Group Normalization},
+  booktitle = {Proceedings of the European Conference on Computer Vision (ECCV)},
+  pages     = {3--19},
+  year      = {2018}
+}
+
+@inproceedings{maas2013rectifier,
+  author    = {Maas, Andrew L. and Hannun, Awni Y. and Ng, Andrew Y.},
+  title     = {Rectifier nonlinearities improve neural network acoustic models},
+  booktitle = {International Conference on Machine Learning (ICML)},
+  volume    = {30},
+  number    = {1},
+  pages     = {3},
+  year      = {2013}
+}
+
+@article{clevert2015fast,
+  author    = {Clevert, Djork-Arn{\'e} and Unterthiner, Thomas and Hochreiter, Sepp},
+  title     = {Fast and accurate deep network learning by exponential linear units ({ELUs})},
+  journal   = {arXiv preprint arXiv:1511.07289},
+  year      = {2015}
+}
+
+@article{hendrycks2016gaussian,
+  author    = {Hendrycks, Dan and Gimpel, Kevin},
+  title     = {Gaussian Error Linear Units ({GELUs})},
+  journal   = {arXiv preprint arXiv:1606.08415},
+  year      = {2016}
+}
+
+@inproceedings{he2015delving,
+  author    = {He, Kaiming and Zhang, Xiangyu and Ren, Shaoqing and Sun, Jian},
+  title     = {Delving deep into rectifiers: Surpassing human-level performance on {ImageNet} classification},
+  booktitle = {Proceedings of the IEEE International Conference on Computer Vision (ICCV)},
+  pages     = {1026--1034},
+  year      = {2015}
+}
+
+% ------------------------------------------------------------------------------
+% Chapter 2 Convnets: Architectures, Data Augmentation, Transfer Learning
+% ------------------------------------------------------------------------------
+
+@article{lecun1998gradient,
+  author    = {LeCun, Yann and Bottou, L{\'e}on and Bengio, Yoshua and Haffner, Patrick},
+  title     = {Gradient-based learning applied to document recognition},
+  journal   = {Proceedings of the IEEE},
+  volume    = {86},
+  number    = {11},
+  pages     = {2278--2324},
+  year      = {1998}
+}
+
+@inproceedings{krizhevsky2012imagenet,
+  author    = {Krizhevsky, Alex and Sutskever, Ilya and Hinton, Geoffrey E.},
+  title     = {{ImageNet} Classification with Deep Convolutional Neural Networks},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
+  volume    = {25},
+  pages     = {1097--1105},
+  year      = {2012}
+}
+
+@article{simonyan2014very,
+  author    = {Simonyan, Karen and Zisserman, Andrew},
+  title     = {Very Deep Convolutional Networks for Large-Scale Image Recognition},
+  journal   = {arXiv preprint arXiv:1409.1556},
+  year      = {2014}
+}
+
+@inproceedings{szegedy2015going,
+  author    = {Szegedy, Christian and Liu, Wei and Jia, Yangqing and Sermanet, Pierre and Reed, Scott and Anguelov, Dragomir and Erhan, Dumitru and Vanhoucke, Vincent and Rabinovich, Andrew},
+  title     = {Going Deeper with Convolutions},
+  booktitle = {Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition (CVPR)},
+  pages     = {1--9},
+  year      = {2015}
+}
+
+@inproceedings{he2016deep,
+  author    = {He, Kaiming and Zhang, Xiangyu and Ren, Shaoqing and Sun, Jian},
+  title     = {Deep Residual Learning for Image Recognition},
+  booktitle = {Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition (CVPR)},
+  pages     = {770--778},
+  year      = {2016}
+}
+
+@article{devries2017improved,
+  author    = {DeVries, Terrance and Taylor, Graham W.},
+  title     = {Improved Regularization of Convolutional Neural Networks with {Cutout}},
+  journal   = {arXiv preprint arXiv:1708.04552},
+  year      = {2017}
+}
+
+@article{zhang2017mixup,
+  author    = {Zhang, Hongyi and Cisse, Moustapha and Dauphin, Yann N. and Lopez-Paz, David},
+  title     = {mixup: Beyond Empirical Risk Minimization},
+  journal   = {arXiv preprint arXiv:1710.09412},
+  year      = {2017}
+}
+
+% ------------------------------------------------------------------------------
+% Chapter 3 Sequence Models: TCN, RNN, Seq2Seq, Captioning, BPTT, LSTM
+% ------------------------------------------------------------------------------
+
+@article{bai2018empirical,
+  author    = {Bai, Shaojie and Kolter, J. Zico and Koltun, Vladlen},
+  title     = {An Empirical Evaluation of Generic Convolutional and Recurrent Networks for Sequence Modeling},
+  journal   = {arXiv preprint arXiv:1803.01271},
+  year      = {2018}
+}
+
+@inproceedings{sutskever2014sequence,
+  author    = {Sutskever, Ilya and Vinyals, Oriol and Le, Quoc V.},
+  title     = {Sequence to Sequence Learning with Neural Networks},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
+  volume    = {27},
+  pages     = {3104--3112},
+  year      = {2014}
+}
+
+@inproceedings{cho2014learning,
+  author    = {Cho, Kyunghyun and van Merri{\"e}nboer, Bart and Gulcehre, Caglar and Bahdanau, Dzmitry and Bougares, Fethi and Schwenk, Holger and Bengio, Yoshua},
+  title     = {Learning Phrase Representations using {RNN} Encoder--Decoder for Statistical Machine Translation},
+  booktitle = {Proceedings of the Conference on Empirical Methods in Natural Language Processing (EMNLP)},
+  pages     = {1724--1734},
+  year      = {2014}
+}
+
+@article{karpathy2015unreasonable,
+  author    = {Karpathy, Andrej},
+  title     = {The Unreasonable Effectiveness of Recurrent Neural Networks},
+  journal   = {Andrej Karpathy blog},
+  year      = {2015},
+  url       = {http://karpathy.github.io/2015/05/21/rnn-effectiveness/}
+}
+
+@inproceedings{vinyals2015show,
+  author    = {Vinyals, Oriol and Toshev, Alexander and Bengio, Samy and Erhan, Dumitru},
+  title     = {Show and Tell: A Neural Image Caption Generator},
+  booktitle = {Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition (CVPR)},
+  pages     = {3156--3164},
+  year      = {2015}
+}
+
+@inproceedings{karpathy2015deep,
+  author    = {Karpathy, Andrej and Fei-Fei, Li},
+  title     = {Deep Visual-Semantic Alignments for Generating Image Descriptions},
+  booktitle = {Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition (CVPR)},
+  pages     = {3128--3137},
+  year      = {2015}
+}
+
+@inproceedings{donahue2015long,
+  author    = {Donahue, Jeffrey and Anne Hendricks, Lisa and Guadarrama, Sergio and Rohrbach, Marcus and Venugopalan, Subhashini and Saenko, Kate and Darrell, Trevor},
+  title     = {Long-term Recurrent Convolutional Networks for Visual Recognition and Description},
+  booktitle = {Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition (CVPR)},
+  pages     = {2625--2634},
+  year      = {2015}
+}
+
+@article{werbos1990backpropagation,
+  author    = {Werbos, Paul J.},
+  title     = {Backpropagation through time: what it does and how to do it},
+  journal   = {Proceedings of the IEEE},
+  volume    = {78},
+  number    = {10},
+  pages     = {1550--1560},
+  year      = {1990}
+}
+
+@inproceedings{pascanu2013difficulty,
+  author    = {Pascanu, Razvan and Mikolov, Tomas and Bengio, Yoshua},
+  title     = {On the difficulty of training recurrent neural networks},
+  booktitle = {International Conference on Machine Learning (ICML)},
+  pages     = {1310--1318},
+  year      = {2013}
+}
+
+@article{hochreiter1997long,
+  author    = {Hochreiter, Sepp and Schmidhuber, J{\"u}rgen},
+  title     = {Long Short-Term Memory},
+  journal   = {Neural Computation},
+  volume    = {9},
+  number    = {8},
+  pages     = {1735--1780},
+  year      = {1997}
 }
