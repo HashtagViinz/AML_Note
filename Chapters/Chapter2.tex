@@ -18,7 +18,7 @@ In computer vision, the fundamental objective is to interpret and reason about v
 \textbf{The Digital Image Tensor:} A digital camera digitizes incoming light into a 3D array of numbers with dimensions $(H \times W \times C)$, where $H$ is the image height, $W$ is the image width, and $C$ represents the color channels (typically $C=3$ for Red, Green, and Blue). Each pixel intensity is represented by an integer in $[0, 255]$ or normalized as a floating-point value in $[0, 1]$.
 \end{Notebox}
 
----
+
 
 \section{Motivations for Convolutions}
 
@@ -40,7 +40,7 @@ To overcome these structural limitations, \textbf{Convolutional Neural Networks 
     \item \textbf{Translation Stationarity (Invariance):} Visual features (such as edges, corners, and textures) are statistically invariant to spatial translation. A pattern detector useful in the top-left corner is equally meaningful in the bottom-right corner. Consequently, the same set of parameters can be shared across all spatial positions.
 \end{enumerate}
 
----
+
 
 \section{The Core Building Block: The Convolutional Layer}
 
@@ -76,6 +76,8 @@ The behavior and spatial dimensions of a convolutional layer are governed by thr
 
 \subsection{Formal Mathematical Definition}
 
+Convolution is a linear operation: it satisfies superposition, so filtering a sum of images is the same as filtering each image and then summing the results. This is the property that makes convolution a linear system.
+
 Formally, the discrete 2D convolution of an image $I$ with a 2D filter $g$ at spatial location $[m, n]$ is defined as:
 
 \begin{equation}
@@ -84,15 +86,19 @@ f[m, n] = (I * g)[m, n] = \sum_{k} \sum_{l} I[m - k, n - l] \, g[k, l]
 \end{equation}
 where $k$ and $l$ index the spatial extent of the kernel.
 
-\begin{keywordbox}
-\textbf{Convolution versus Cross-Correlation in Deep Learning} \\
-In classical signal processing, the index subtraction $I[m - k, n - l]$ implies flipping the kernel $g$ by $180^\circ$. 
-Deep learning libraries (e.g., PyTorch) compute \textbf{Cross-Correlation} instead:
-\[ f[m, n] = (I \star g)[m, n] = \sum_{k} \sum_{l} I[m + k, n + l] \, g[k, l] \]
-Because kernel weights $g[k, l]$ are learned from scratch via backpropagation, the network simply learns pre-flipped weights directly, rendering cross-correlation and convolution mathematically equivalent for optimization.
-\end{keywordbox}
+\subsection{Convolution versus Cross-Correlation}
+The minus sign in Equation~\ref{eq:2d_conv} is not cosmetic: it is what makes the operation a true convolution. In one dimension, convolution is
+\[ (f * g)[n] = \sum_k f[n-k]\,g[k], \]
+while cross-correlation is
+\[ (f \star g)[n] = \sum_k f[n+k]\,g[k]. \]
+In two dimensions, the same difference corresponds to rotating the kernel by $180^\circ$: convolution flips the kernel, cross-correlation does not.
 
----
+Most deep learning libraries (e.g., PyTorch) actually compute cross-correlation, but call it convolution. This is not a problem in practice: the kernel weights are learned, so the network can learn the flipped version directly, and the two operations are equivalent for optimization. Mathematically, however, if the kernel is not flipped, the correct name is cross-correlation, not convolution.
+
+\subsection{Receptive Field}
+The \textbf{receptive field} of a unit is the region of the input image that can influence its value. For a stack of $L$ convolutional layers with filter size $K$ and stride 1, the receptive field grows linearly:
+\[ \text{RF} = 1 + L(K-1). \]
+For example, three $3 \times 3$ layers give a $7 \times 7$ receptive field. Pooling and stride enlarge it further. This is why deep CNNs can capture large structures even though each individual filter only sees a small neighborhood.
 
 \section{Classic Image Processing Filters}
 
@@ -135,7 +141,7 @@ Transposing $g_{\text{vertical}}$ yields a horizontal edge detector $g_{\text{ho
 
 \begin{examplebox}
 \textbf{3. Step-by-Step 2D Convolution Example (Stride 1, Pad 1):}\\
-Convolving a $3 \times 3$ image $I$ with a vertical edge filter $g$ with padding $P = 1$ pads the input with zeros into a $5 \times 5$ grid $I_{\text{padded}}$:
+Convolving a $3 \times 3$ image $I$ with a vertical edge filter $g$ with padding $P = 1$ first pads the input with zeros into a $5 \times 5$ grid $I_{\text{padded}}$:
 \[
 I_{\text{padded}} = 
 \begin{array}{|c|c|c|c|c|}
@@ -147,13 +153,22 @@ I_{\text{padded}} =
 0 & 0 & 0 & 0 & 0 \\ \hline
 \end{array}
 \]
-Applying the convolution with stride $S = 1$ yields:
+Because this is a true convolution, the kernel must be flipped by $180^\circ$:
 \[
-\begin{array}{c} g[k,l] \\ \begin{array}{|c|c|c|}
+g_{\text{flipped}} = \begin{array}{|c|c|c|}
 \hline
--1 & 0 & 1 \\ \hline
--1 & 0 & 1 \\ \hline
--1 & 0 & 1 \\ \hline
+1 & 0 & -1 \\ \hline
+1 & 0 & -1 \\ \hline
+1 & 0 & -1 \\ \hline
+\end{array}
+\]
+Using $g_{\text{flipped}}$, the convolution output is:
+\[
+\begin{array}{c} g_{\text{flipped}} \\ \begin{array}{|c|c|c|}
+\hline
+1 & 0 & -1 \\ \hline
+1 & 0 & -1 \\ \hline
+1 & 0 & -1 \\ \hline
 \end{array} \end{array}
 \quad \otimes \quad
 \begin{array}{c} I_{\text{padded}} \\ \text{\small(conceptually)} \end{array}
@@ -166,25 +181,13 @@ Applying the convolution with stride $S = 1$ yields:
 \end{array} \end{array}
 \]
 
-\textbf{Accounting for the $180^\circ$ Kernel Flip:}\\
-Flipping $g$ by $180^\circ$ produces:
-\[
-g_{\text{flipped}} = \begin{array}{|c|c|c|}
-\hline
-1 & 0 & -1 \\ \hline
-1 & 0 & -1 \\ \hline
-1 & 0 & -1 \\ \hline
-\end{array}
-\]
-\begin{itemize}[nosep, leftmargin=*]
-    \item \textbf{Center Value $f[1,1] = 18$:} Flipped kernel overlaps fully with the original $3 \times 3$ image pixels:
-    \[ (1 \cdot 8 - 1 \cdot 2) + (1 \cdot 7 - 1 \cdot 3) + (1 \cdot 9 - 1 \cdot 1) = 6 + 4 + 8 = 18 \]
-    \item \textbf{Top-Left Value $f[0,0] = -10$:} Flipped kernel overlaps with the top-left boundary of $I_{\text{padded}}$:
-    \[ (1 \cdot 0 - 1 \cdot 5) + (1 \cdot 0 - 1 \cdot 5) = -10 \]
-\end{itemize}
+For example, the center value is obtained by overlapping the flipped kernel with the original $3 \times 3$ image:
+\[ (1 \cdot 8 - 1 \cdot 2) + (1 \cdot 7 - 1 \cdot 3) + (1 \cdot 9 - 1 \cdot 1) = 6 + 4 + 8 = 18, \]
+while the top-left value uses the padded border:
+\[ (1 \cdot 0 - 1 \cdot 5) + (1 \cdot 0 - 1 \cdot 5) = -10. \]
 \end{examplebox}
 
----
+
 
 \section{Output Shape and Parameter Counting for 3D Volumes}
 
@@ -208,7 +211,7 @@ Suppose the input volume is a $32 \times 32 \times 3$ image, and we apply $10$ f
 \end{itemize}
 \end{examplebox}
 
----
+
 
 \section{The Pooling Layer}
 
@@ -269,7 +272,29 @@ Applying Average Pooling to a $4 \times 4$ slice:
 \]
 \end{examplebox}
 
----
+\newpage
+\section{Classic CNN Architectures}
+
+Convolution and pooling are the building blocks; the history of CNN architectures shows how stacking them changed computer vision.
+
+\begin{table}[htbp]
+\centering
+\small
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{p{0.15\textwidth} p{0.36\textwidth} p{0.36\textwidth}}
+\toprule
+\textbf{Model} & \textbf{Key idea} & \textbf{Why it matters} \\
+\midrule
+LeNet-5~\cite{lecun1998gradient} & Convolution + pooling + fully connected layers, trained end-to-end with backpropagation & Early proof that learned filters outperform handcrafted features on digit recognition \\
+AlexNet~\cite{krizhevsky2012imagenet} & 8 layers, ReLU, dropout, data augmentation, GPU training & Won ImageNet by a large margin and started the deep learning era in vision \\
+VGG~\cite{simonyan2014very} & Stack of $3 \times 3$ convolutions, 16--19 layers & Showed that small filters and depth are more effective than large filters \\
+ResNet~\cite{he2016deep} & Residual (skip) connections and very deep networks (50--152 layers) & Solved the degradation problem and became the standard backbone for transfer learning \\
+\bottomrule
+\end{tabular}
+\caption{Classic CNN architectures and their main contributions.}\label{tab:cnn_architectures}
+\end{table}
+
+Two trends emerge: filters became smaller ($3 \times 3$) and networks became deeper. Small filters keep the parameter count low, while depth increases the receptive field and the level of abstraction.
 
 \section{Visualizing Convolutional Networks}
 
@@ -288,7 +313,7 @@ Visualizing what deep CNNs learn (e.g., via Deconvolutional Networks by Zeiler a
     \caption{Hierarchical feature representations learned across deep convolutional layers.}\label{fig:inout}
 \end{figure}
 
----
+
 
 \section{Vision Regularization: Data Augmentation}
 
@@ -321,7 +346,7 @@ While weight decay acts on model parameters and Dropout acts on activations, \te
     \item \textbf{Mixup:} Proposed by Zhang et al.~\cite{zhang2017mixup}, blends pairs of images and their corresponding one-hot labels linearly. For instance, blending $40\%$ of a cat image with $60\%$ of a dog image produces a target training label of $[0.4\,\text{cat}, 0.6\,\text{dog}]$. At test time, standard unblended images are used.
 \end{itemize}
 
----
+
 
 \section{Transfer Learning in Computer Vision}
 
@@ -346,73 +371,36 @@ Transfer learning is standard across all computer vision applications:
 
 \begin{keywordbox}
 \textbf{The Model Zoo} \\
-All major deep learning frameworks provide a **Model Zoo** (e.g., \texttt{torchvision.models} in PyTorch) containing pre-trained weights for state-of-the-art vision architectures. These models can be downloaded instantly and fine-tuned for custom downstream tasks.
+All major deep learning frameworks provide a \textbf{Model Zoo} (e.g., \texttt{torchvision.models} in PyTorch) containing pre-trained weights for state-of-the-art vision architectures. These models can be downloaded instantly and fine-tuned for custom downstream tasks.
 \end{keywordbox}
 
 \newpage
-\section{Chapter Summary and Conceptual Graph}
+\section{Recap: Key Concepts}
 
-The concepts developed in this chapter establish how the inductive biases of natural visual data lead from raw pixels to deep hierarchical vision systems:
+This chapter can be read as a chain: an image is a tensor, convolution extracts local features with shared weights, pooling reduces the resolution, and deeper stacks build increasingly abstract representations. Data augmentation and transfer learning make these models practical when labeled data are scarce.
+
+\begin{table}[htbp]
+\centering
+\small
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{p{0.21\textwidth} p{0.34\textwidth} p{0.33\textwidth}}
+\toprule
+\textbf{Concept} & \textbf{Key idea} & \textbf{Formula / rule} \\
+\midrule
+Image tensor & Digital image as a 3D array & $H \times W \times C$ \\
+Convolution & Local filters with shared weights & flip kernel (otherwise cross-correlation) \\
+Hyperparameters & Filter size, padding, stride, channels & $W_{\text{out}} = \lfloor (W-K+2P)/S \rfloor + 1$ \\
+Receptive field & Region of input that affects one unit & $1 + L(K-1)$ \\
+Pooling & Downsampling without parameters & max or average \\
+Architectures & LeNet, AlexNet, VGG, ResNet & smaller filters, deeper stacks \\
+Visualization & Hierarchy of learned features & edges $\to$ textures $\to$ parts $\to$ objects \\
+Augmentation & Label-preserving transformations & flips, crops, color, Cutout, Mixup \\
+Transfer learning & Reuse a pre-trained backbone & freeze features, replace the head \\
+\bottomrule
+\end{tabular}
+\caption{One-page recap of the key concepts in this chapter.}\label{tab:ch2_recap}
+\end{table}
 
 \begin{InsightBox}
-\textbf{The Logical Connections Between Nodes:}
-\begin{itemize}[leftmargin=*]
-    \item \textbf{From Node 1 to 2:} Viewing digital images as raw flattened arrays reveals why generic architectures fail: high spatial resolutions lead directly to parameter explosion and loss of geometry.
-    \item \textbf{From Node 2 to 3:} Recognizing the failure of dense connections motivates identifying domain-specific inductive biases: pixels exhibit local correlation and patterns are invariant to spatial shifts.
-    \item \textbf{From Node 3 to 4:} Locality and stationarity directly dictate the mathematical structure of the Convolutional Layer: local receptive fields with shared kernel weights.
-    \item \textbf{From Node 4 to 5:} While convolutions preserve spatial structure, deep networks need downsampling to grow the effective receptive field and limit computation, achieved through parameter-free Pooling layers.
-    \item \textbf{From Node 5 to 6:} Interleaving convolutions and pooling enables deep networks to naturally learn hierarchical representations, moving from oriented edges in early layers to semantic concepts in deep layers.
-    \item \textbf{From Node 6 to 7:} Deep vision models with high expressive capacity easily memorize training images; Data Augmentation (including Cutout and Mixup) enforces invariance to photometric and spatial perturbations.
-    \item \textbf{From Node 7 to 8:} Because training deep CNNs from scratch requires millions of images, Transfer Learning allows small custom datasets to inherit universal visual features from large-scale pre-trained Model Zoos.
-\end{itemize}
+\textbf{The one-sentence version:} a CNN is a stack of local linear filters and non-linearities that reuses the same weights across space; pooling and depth expand the receptive field, while augmentation and transfer learning make the model practical.
 \end{InsightBox}
-
-\begin{figure}[htbp]
-\centering
-\begin{tikzpicture}[
-    node distance=0.6cm and 0cm,
-    conceptnode/.style={
-        rectangle, rounded corners=4pt, draw=ocre!80, fill=ocre!8,
-        line width=0.8pt, text width=0.85\textwidth, inner sep=5pt,
-        font=\sffamily\small
-    },
-    arrowline/.style={
-        ->, >=Stealth, line width=1pt, color=ocre!80
-    }
-]
-
-\node[conceptnode] (n1) {\textbf{1. Digital Image Representation}\\
-Continuous optical images digitized into multi-dimensional pixel arrays $(H \times W \times C)$.};
-
-\node[conceptnode, below=of n1] (n2) {\textbf{2. Failure of Fully Connected Layers}\\
-Dense connections explode parameter counts into billions and ignore 2D spatial grid topology.};
-
-\node[conceptnode, below=of n2] (n3) {\textbf{3. Inductive Biases: Locality \& Stationarity}\\
-Physical priors of images: nearby pixels correlate (local receptive fields); features are translation-invariant (weight sharing).};
-
-\node[conceptnode, below=of n3] (n4) {\textbf{4. The Convolutional Layer}\\
-Learnable 2D/3D kernels slide across the spatial grid, computing local cross-correlations to produce feature maps.};
-
-\node[conceptnode, below=of n4] (n5) {\textbf{5. Pooling Layers (Max \& Average)}\\
-Subsamples spatial dimensions to reduce computation and induce local translation invariance without parameters.};
-
-\node[conceptnode, below=of n5] (n6) {\textbf{6. Hierarchical Visual Representations}\\
-Deep stacking naturally discovers compositional primitives: low-level edges $\to$ textures $\to$ object parts $\to$ semantic classes.};
-
-\node[conceptnode, below=of n6] (n7) {\textbf{7. Vision Regularization: Data Augmentation}\\
-Artificially expands dataset diversity via spatial crops, flips, Cutout, and Mixup to prevent overfitting.};
-
-\node[conceptnode, below=of n7] (n8) {\textbf{8. Transfer Learning \& Model Zoos}\\
-Overcomes small-data limitations by freezing pre-trained CNN backbones and adapting only classification heads.};
-
-\draw[arrowline] (n1) -- (n2);
-\draw[arrowline] (n2) -- (n3);
-\draw[arrowline] (n3) -- (n4);
-\draw[arrowline] (n4) -- (n5);
-\draw[arrowline] (n5) -- (n6);
-\draw[arrowline] (n6) -- (n7);
-\draw[arrowline] (n7) -- (n8);
-
-\end{tikzpicture}
-\caption{Conceptual roadmap of convolutional neural networks and computer vision.}\label{fig:ch2_roadmap}
-\end{figure}

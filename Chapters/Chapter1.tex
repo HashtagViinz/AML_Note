@@ -27,102 +27,83 @@ Some typical \textbf{Computer Vision Applications} include:
 \end{itemize}
 \end{examplebox}
 
----
-
 \section{Parametric Models and Optimization Foundations}
 
-The majority of machine learning models can be formulated as \textbf{Parametric Models}. A parametric model takes an input $x$ and uses a set of parameters (or weights) $W$ and biases $b$ to produce an output prediction $z$:
-\[ z = f(x,W) = Wx + b \]
+In \textbf{image classification}, the input is an image and the output is one label from a fixed set (for example \textit{cat}, \textit{dog}, \textit{truck}). Most models in this course are \textbf{parametric}: they take an input $x$ and use a set of learnable weights $W$ and biases $b$ to produce a prediction. The simplest case is the linear score
+\[ z = f(x,W) = Wx + b, \]
+which is exactly the linear classifier shown in the lecture slides. For a $32 \times 32 \times 3$ image, $x$ is a vector of $3072$ numbers; if we have $10$ classes, $W$ has shape $10 \times 3072$ and $z$ is a vector of $10$ class scores.
 
-While the exact nature of the prediction depends on the task, what unifies these models is the \textbf{Optimization Process}. We define a Loss function $L$ that measures the error of our predictions, and we iteratively adjust the weights using \textbf{Gradient Descent}:
-\[ W^{t+1} = W^t - \alpha \nabla_W L \]
-where $\alpha$ is the learning rate.
+What unifies these models is the way they are trained. We define a loss $L$ that measures the error of the predictions, and we adjust the weights with \textbf{gradient descent}:
+\[ W^{t+1} = W^t - \alpha \nabla_W L, \]
+where $\alpha$ is the learning rate. The gradient points in the direction in which the loss grows fastest, so we move in the opposite direction.
 
-By simply changing the \textit{activation function} applied to the linear score $z$ and the corresponding \textit{loss function}, we obtain different classical models: Linear Regression, Logistic Regression, and the Softmax Classifier.
+By changing the activation applied to the linear score and the corresponding loss, we obtain the classical models: Linear Regression, Logistic Regression, and the Softmax Classifier.
 
 \subsection{Linear Regression (\texorpdfstring{$f: \mathbb{R}^D \to \mathbb{R}$}{R -> R})}
-Linear Regression is used when the target variable is continuous. We use the identity activation function (i.e., no activation), so the predicted output $\hat{y}$ is exactly the linear score:
-\[ \hat{y} = z = Wx + b \]
-We optimize this model by minimizing the \textbf{Mean Squared Error (MSE)} loss:
-\[ L = \frac{1}{N} \sum_{i=1}^N {(y_i - \hat{y}_i)}^2 \]
+For a continuous target we use the identity activation, so the prediction is simply the linear score:
+\[ \hat{y} = z = Wx + b. \]
+The model is trained by minimizing the \textbf{Mean Squared Error (MSE)}:
+\[ L = \frac{1}{N} \sum_{i=1}^N {(y_i - \hat{y}_i)}^2. \]
 
 \subsection{Logistic Regression (\texorpdfstring{$f: \mathbb{R}^D \to [0, 1]$}{R -> [0, 1]})}
-Logistic Regression is used for binary classification. We map the linear score $z$ to a probability between 0 and 1 using the \textbf{Sigmoid} activation function $\sigma(z)$:
-\[ P(Y=1 | X=x) = \sigma(z) = \frac{1}{1 + e^{-z}} \]
-The appropriate loss function for this model is the \textbf{Binary Cross-Entropy Loss (BCE)}. For a dataset of $N$ samples, it is defined as:
-\[ L = -\frac{1}{N} \sum_{i=1}^N \left[ \underbrace{y_i \log(\sigma(z_i))}_{\text{Active if } y=1} + \underbrace{(1 - y_i) \log(1 - \sigma(z_i))}_{\text{Active if } y=0} \right] \]
-
-\begin{Notebox}
-\textbf{Understanding the BCE Formula:} This equation uses a clever mathematical trick to combine two mutually exclusive cases into a single line:
-\begin{itemize}[nosep, leftmargin=*]
-    \item When the true class is \textbf{$y_i = 1$}, the second term $(1 - 1) = 0$ disappears, and the loss evaluates only $-\log(\sigma(z_i))$, penalizing the model if it predicts a low probability.
-    \item When the true class is \textbf{$y_i = 0$}, the first term $0$ disappears, and the loss evaluates only $-\log(1 - \sigma(z_i))$, penalizing the model if it predicts a high probability for class 1.
-\end{itemize}
-\end{Notebox}
+For binary classification we squash the score into $[0,1]$ with the \textbf{Sigmoid} function:
+\[ P(Y=1 | X=x) = \sigma(z) = \frac{1}{1 + e^{-z}}. \]
+The corresponding loss is the \textbf{Binary Cross-Entropy (BCE)}:
+\[ L = -\frac{1}{N} \sum_{i=1}^N \left[ y_i \log(\sigma(z_i)) + (1 - y_i) \log(1 - \sigma(z_i)) \right]. \]
+The two terms cover the two possible labels: when $y_i=1$ only the first one is active, and when $y_i=0$ only the second one is. In this way the loss penalizes the model whenever it assigns a low probability to the correct class.
 
 \begin{figure}[htbp]
     \centering
     \includegraphics[width=0.7\textwidth]{Pictures/logistic.png}
-    \caption{Illustration of the Sigmoid function in Logistic Regression.}\label{fig:logisticregresssion}
+    \caption{The Sigmoid function used in Logistic Regression.}\label{fig:logisticregresssion}
 \end{figure}
 
 \subsection{Softmax Classifier (\texorpdfstring{$f: \mathbb{R}^D \to \{0, \dots, K\}$}{R -> \{0, \dots, K\}})}
-The Softmax Classifier generalizes Logistic Regression to multiple, mutually exclusive classes. It maps the raw scores $z$ into a valid probability distribution over the classes using the \textbf{Softmax function}:
-\[ P(Y = k | X = x_i) = \frac{e^{z_k}}{\sum_j e^{z_j}} \]
-
-\begin{Notebox}
-\textbf{Why Softmax?} We want to interpret raw classifier scores as \textit{probabilities}. The Softmax function transforms scores such that they are strictly positive and sum to 1.
-\end{Notebox}
+The Softmax Classifier generalizes Logistic Regression to $K$ mutually exclusive classes. It maps the raw scores into a valid probability distribution:
+\[ P(Y = k | X = x_i) = \frac{e^{z_k}}{\sum_j e^{z_j}}. \]
+The Softmax function makes all scores positive and normalizes them so that they sum to one, which is exactly what we need to interpret them as probabilities.
 
 \begin{examplebox}
-For an input image of size $32 \times 32 \times 3$ (e.g., CIFAR-10), the flattened array $x$ has $3072$ numbers. If we are classifying into 10 categories, the weight matrix $W$ will have dimensions $10 \times 3072$, producing a $10 \times 1$ vector of raw class scores before the Softmax is applied.
+For an input image of size $32 \times 32 \times 3$ (e.g., CIFAR-10), the flattened array $x$ has $3072$ numbers. If we are classifying into 10 categories, the weight matrix $W$ has dimensions $10 \times 3072$, producing a vector of $10$ raw class scores before the Softmax is applied.
 \end{examplebox}
 
-We then optimize the model using the \textbf{Categorical Cross-Entropy Loss}, often referred to as the Negative Log-Likelihood (NLL). Over the entire dataset of $N$ samples, expanding the Softmax probability formula, the loss becomes:
-\[ NLL(W, X) = -\sum_{i=1}^N \left[ \underbrace{W_{y_i}^T x_i}_{\text{Punteggio della classe giusta}} - \underbrace{\log \left( \sum_{k=1}^K \exp(W_k^T x_i) \right)}_{\text{Somma dei punteggi delle altre classi}} \right] \]
+We train the model with the \textbf{cross-entropy loss}, i.e.\ the negative log-probability of the correct class:
+\[ L_i = -\log P(Y = y_i | X = x_i). \]
+This is the loss shown in the lecture slides. Minimizing it pushes the score of the correct class up and the scores of the other classes down, so that the correct class becomes increasingly likely.
 
 \begin{figure}[htbp]
     \centering
     \includegraphics[width=0.7\textwidth]{Pictures/softmax.png}
-    \caption{Abstract representation of logistic regression.}\label{fig:Softmax}
+    \caption{The Softmax function converts raw class scores into a probability distribution.}\label{fig:Softmax}
 \end{figure}
-
-\begin{Notebox}
-\textbf{Understanding the Softmax NLL Formula:} 
-By looking at the expanded formula, we see that the optimizer tries to maximize the linear score $W_{y_i}^T x_i$ of the \textit{correct class} $y_i$, while simultaneously pushing down the log-sum of the scores of \textit{all available classes}. This creates a competitive environment where increasing the score of the correct class implicitly decreases the relative probability of the others.
-\end{Notebox}
-
----
 
 \section{Deep Feedforward Networks and Backpropagation}
 
 \subsection{Deep Neural Networks}
-By stacking multiple layers and applying non-linear activation functions, we construct multi-layer Neural Networks (Multi-Layer Perceptrons, MLPs):
-\[ f = W_2 \max(0, W_1 x + b_1) + b_2 \]
-This hierarchical representation enables the network to learn rich, non-linear representations from raw data.
+By stacking linear layers and non-linear activation functions we obtain a multi-layer Neural Network (MLP):
+\[ f = W_2 \max(0, W_1 x + b_1) + b_2. \]
+This is the two-layer network shown in the lecture slides. The non-linearity is essential: without it, the two matrices would collapse into a single linear transformation.
 
 \subsection{Backpropagation}
-To train a deep network, we compute the gradient of the loss with respect to all parameters using the \textbf{Backpropagation} algorithm~\cite{rumelhart1986learning}, which systematically applies the multivariable chain rule from the output back to the inputs (backward pass).
+To train the network we need the gradient of the loss with respect to every parameter. \textbf{Backpropagation}~\cite{rumelhart1986learning} does this by applying the chain rule backwards, from the output to the input.
 
 \begin{Notebox}
-\textbf{Backpropagation with Matrices:} When inputs and weights are vectors or matrices, local gradients become \textit{Jacobian matrices}. However, Jacobians are often sparse. Instead of explicitly forming them, practical frameworks use implicit vector-Jacobian products. A crucial dimensional consistency check to remember: the downstream gradient $\frac{\partial L}{\partial x}$ \textbf{always has the exact same shape} as the tensor $x$!
+\textbf{Backpropagation with Matrices:} When inputs and weights are vectors or matrices, the local gradients are Jacobian matrices. In practice frameworks never form them explicitly; they compute the resulting vector--Jacobian products directly. A useful check is that the gradient $\partial L/\partial x$ always has the same shape as $x$.
 \end{Notebox}
 
-Here are some solved exercises demonstrating the Forward and Backward pass step-by-step:
+Here is a complete worked backpropagation exercise that walks through the forward and backward pass step by step:
 
 \includepdf[pages=-]{Pictures/FDS_Exercises.pdf}
 
----
-
 \section{The Role of Activation Functions}
 
-An \textbf{activation function} is a mathematical operator applied to the affine output of a layer ($z = Wx+b$) before passing it to subsequent layers. Its primary role is to introduce \textbf{non-linearity} into the network. 
+An \textbf{activation function} is applied to the affine output of a layer ($z = Wx+b$) before it is passed on. Its job is to introduce \textbf{non-linearity} into the network.
 
 \begin{Notebox}
-\textbf{Why do we need Non-Linearity?} If we only stacked linear layers without activation functions, the entire deep network would mathematically collapse into a single linear transformation. For example, a 2-layer linear network $f = W_2(W_1 x)$ can be rewritten as $f = W'x$ where $W' = W_2 W_1$. Non-linear activations allow the network to approximate arbitrarily complex, non-linear decision boundaries.
+\textbf{Why do we need non-linearity?} A two-layer linear network computes $W_2(W_1 x) = (W_2 W_1)x$, which is still a linear function. Non-linear activations allow the network to approximate complex, non-linear decision boundaries.
 \end{Notebox}
 
-Some of the most widely used activation functions are illustrated in Figure~\ref{fig:ActivationFunction}:
+Some of the most common activation functions are shown in Figure~\ref{fig:ActivationFunction}.
 
 \begin{figure}[htbp]
     \centering
@@ -131,27 +112,13 @@ Some of the most widely used activation functions are illustrated in Figure~\ref
 \end{figure}
 
 \subsection{ReLU (Rectified Linear Unit)}
-\textbf{Formula:} $f(x) = \max(0, x)$ \\
-ReLU is the classic default activation function across deep learning architectures.
-\begin{itemize}[nosep, leftmargin=*]
-    \item \textbf{Pros:} It does not saturate in the positive region. It is highly computationally efficient (just a thresholding operation) and converges significantly faster than Sigmoid or Tanh in practice (often roughly $6\times$ faster).
-    \item \textbf{Cons:} Its outputs are not zero-centered. Most importantly, it suffers from the \textbf{``Dead ReLU''} problem: if an activation falls into the negative regime ($x < 0$), its local gradient is exactly $0$. If a neuron is pushed into this regime by an unfortunate large weight update, it will never update its weights again.
-\end{itemize}
+\textbf{Formula:} $f(x) = \max(0, x)$. ReLU is the classic default: it does not saturate for positive inputs, it is cheap to compute, and in practice it converges much faster than Sigmoid or Tanh (often about $6\times$ faster). Its main weakness is the \textbf{``Dead ReLU''} problem: for $x<0$ the gradient is exactly zero, so a neuron can get stuck and stop updating.
 
 \subsection{Leaky ReLU}
-\textbf{Formula:} $f(x) = \max(\alpha x, x)$ (where typically $\alpha = 0.01$) \\
-Introduced by Maas et al.~\cite{maas2013rectifier}, Leaky ReLU is designed specifically to prevent the ``dead neuron'' problem of standard ReLU\@.
-\begin{itemize}[nosep, leftmargin=*]
-    \item \textbf{Pros:} Retains all the computational advantages of ReLU (no positive saturation, fast evaluation), while the small non-zero slope for negative inputs guarantees that neurons will never permanently die.
-\end{itemize}
+\textbf{Formula:} $f(x) = \max(\alpha x, x)$, with $\alpha \approx 0.01$. Introduced by Maas et al.~\cite{maas2013rectifier}, it keeps the advantages of ReLU but gives a small non-zero slope for negative inputs, so neurons do not die permanently.
 
 \subsection{ELU (Exponential Linear Units)}
-\textbf{Formula:} $f(x) = x$ if $x > 0$, else $\alpha(e^x - 1)$ \\
-Proposed by Clevert et al.~\cite{clevert2015fast}, ELU is defined to retain ReLU advantages while shifting mean activations toward zero:
-\begin{itemize}[nosep, leftmargin=*]
-    \item \textbf{Pros:} Inherits the benefits of ReLU, but produces outputs with a mean closer to zero. Its smooth negative saturation regime adds noise robustness compared to unbounded negative regimes.
-    \item \textbf{Cons:} More computationally demanding because evaluating the exponential function $e^x$ is slower than simple comparisons.
-\end{itemize}
+\textbf{Formula:} $f(x) = x$ if $x > 0$, otherwise $\alpha(e^x - 1)$. Proposed by Clevert et al.~\cite{clevert2015fast}, ELU keeps the benefits of ReLU and brings the mean activation closer to zero. Its negative saturation regime adds some robustness to noise, but evaluating the exponential is more expensive than a simple comparison.
 
 \begin{figure}[htbp]
     \centering
@@ -160,11 +127,7 @@ Proposed by Clevert et al.~\cite{clevert2015fast}, ELU is defined to retain ReLU
 \end{figure}
 
 \subsection{GELU (Gaussian Error Linear Unit)}
-\textbf{Formula:} $f(x) = x \cdot \Phi(x)$, where $\Phi(x)$ is the cumulative distribution function (CDF) of the standard normal distribution. Introduced by Hendrycks and Gimpel~\cite{hendrycks2016gaussian}:
-\begin{itemize}[nosep, leftmargin=*]
-    \item \textbf{Pros:} Exhibits smooth probabilistic gating behavior around $0$. Its continuous curvature facilitates optimization in state-of-the-art architectures, making it the standard choice in \textbf{GPT, BERT}, and modern Vision Transformers.
-    \item \textbf{Cons:} Slightly higher computational cost than ReLU\@.
-\end{itemize}
+\textbf{Formula:} $f(x) = x \cdot \Phi(x)$, where $\Phi(x)$ is the cumulative distribution function (CDF) of the standard normal distribution. Introduced by Hendrycks and Gimpel~\cite{hendrycks2016gaussian}, GELU behaves smoothly around zero, which facilitates optimization. It is used in GPT, BERT and many modern Vision Transformers; the price is a slightly higher computational cost than ReLU.
 
 \begin{figure}[htbp]
     \centering
@@ -172,30 +135,23 @@ Proposed by Clevert et al.~\cite{clevert2015fast}, ELU is defined to retain ReLU
     \caption{Illustration of GELU.}\label{fig:gelu}
 \end{figure}
 
-\begin{Notebox}
-\textbf{TL;DR --- Practical Guidelines for Activation Functions:}
-\begin{itemize}[nosep, leftmargin=*]
-    \item Use \textbf{ReLU} as your standard baseline, monitoring learning rates to avoid dead neurons.
-    \item Explore \textbf{Leaky ReLU} or \textbf{GELU} for improved gradient flow and smoother optimization.
-    \item Avoid \textbf{Sigmoid/Tanh} for intermediate hidden layers of deep networks, reserving them strictly for output gates or bounded representations (such as in LSTM cells).
-\end{itemize}
-\end{Notebox}
+Two historical activations are worth mentioning. \textbf{Sigmoid} and \textbf{Tanh} were common in early networks, but both saturate and therefore slow down learning in deep stacks. \textbf{Maxout} is a less common variant that takes the maximum over several learned linear projections. In modern vision and language models, ReLU and GELU are the standard choices.
 
----
+\begin{Notebox}
+\textbf{In practice:} use ReLU as the default, be careful with the learning rate to avoid dead neurons, and try Leaky ReLU or GELU if you want a small improvement. Avoid Sigmoid or Tanh in the hidden layers of deep networks; they are still useful as output gates or inside recurrent cells.
+\end{Notebox}
 
 \section{Weight Initialization and Signal Propagation}
 
-Properly initializing the weights of a neural network is crucial. With poor initialization, training can fail entirely before it starts due to signal collapse or numerical explosion.
+Proper initialization is crucial: with a bad starting point, training can fail before it begins, either because the signal collapses or because it explodes.
 
 \subsection{The Pitfalls of Naive Initialization}
 \begin{itemize}[nosep, leftmargin=*]
-    \item \textbf{Constant Initialization ($W = \text{constant}$):} If all weights are initialized to the same value (e.g., $W=0$), all neurons in a given layer will produce identical outputs and receive identical gradients during backpropagation. The network fails to \textit{break symmetry} and cannot learn independent features.
+    \item \textbf{Constant initialization ($W = \text{constant}$):} if all weights start with the same value, all neurons in a layer produce identical outputs and receive identical gradients. The network cannot break symmetry and cannot learn different features.
 \end{itemize}
 
 \subsubsection*{Small Random Noise and Vanishing Gradients}
-A common naive approach is initializing weights with small random numbers, such as \texttt{W = 0.01 * }\allowbreak\texttt{np.random.randn(D, H)}, where weights are sampled from a standard normal distribution scaled by a tiny standard deviation of $0.01$. % chktex 36
-
-In deep networks, this naive scaling causes complete signal extinction:
+A common naive choice is to initialize the weights with small random values, such as \texttt{W = 0.01 * }\allowbreak\texttt{np.random.randn(D, H)}. This seems harmless, but in a deep network it makes the signal die layer by layer.
 
 \begin{figure}[htbp]
     \centering
@@ -203,65 +159,49 @@ In deep networks, this naive scaling causes complete signal extinction:
     \caption{Distribution of activations $x$ across 6 layers with $W \sim \mathcal{N}(0, 0.01)$ and Tanh.}\label{fig:activation_stats}
 \end{figure}
 
-\begin{itemize}[leftmargin=*]
-    \item \textbf{Step 1: The Forward Pass (Shrinking Activations).}\\
-    The histograms in Figure~\ref{fig:activation_stats} illustrate the distribution of \textbf{activations} across successive layers. Because the weights are scaled by $0.01$, the output of each layer is strictly smaller in variance than its input. Across sequential layers, this repeated multiplication causes the signal energy to exponentially decay. By Layer 6, activations have completely collapsed to $0$ ($\text{std} = 0.05$).
-    
-    \item \textbf{Step 2: The Backward Pass (Vanishing Gradients).}\\
-    During backpropagation through a linear layer $y = Wx$, the local gradient with respect to weights is $\frac{\partial y}{\partial W} = x$. Therefore, the gradient of the Loss with respect to $W$ is:
-    \[ \frac{\partial L}{\partial W} = x^T \frac{\partial L}{\partial y} \]
-    \textbf{The weight update is directly proportional to the magnitude of the input activations $x$}. Because the forward pass collapsed the activations to $0$, the weight gradient evaluates to $\frac{\partial L}{\partial W} \approx 0 \cdot \frac{\partial L}{\partial y} = 0$, bringing learning to a complete standstill.
-\end{itemize}
+Figure~\ref{fig:activation_stats} shows the distribution of the activations across six layers. Because the weights are scaled by $0.01$, the variance shrinks at every layer; by layer 6 the activations have collapsed to zero (standard deviation $0.05$).
+
+The same phenomenon appears in the backward pass. The gradient of a weight is proportional to the input activation, so when the activations are close to zero, the weight gradients are also close to zero. The network is still running, but it is no longer learning.
 
 \subsection{Variance Scaling Methods: The Solution}
-To guarantee that signal variance remains stable across deep layers, we scale initial weights \textbf{dynamically} based on the fan-in ($D_{in}$) of each neuron:
+To keep the signal variance stable, we scale the initial weights according to the fan-in $D_{in}$ of each neuron.
 
 \begin{keywordbox}
 \textbf{1. Xavier (Glorot) Initialization}\\
-Designed for symmetric, zero-centered activation functions like \textbf{Tanh} or \textbf{Sigmoid}. The variance of activations is kept constant across layers by drawing weights from a distribution with standard deviation:
-\[ \text{std} = \frac{1}{\sqrt{D_{in}}} \]
+Designed for symmetric, zero-centered activations such as Tanh or Sigmoid. The weights are drawn with standard deviation
+\[ \text{std} = \frac{1}{\sqrt{D_{in}}}. \]
 
 \textbf{2. Kaiming (He) Initialization (He et al., 2015)~\cite{he2015delving}}\\
-Xavier initialization fails with \textbf{ReLU} because ReLU zeroes out all negative values, effectively halving the variance at each step. Kaiming initialization compensates by doubling the variance, setting the standard deviation to:
-\[ \text{std} = \sqrt{\frac{2}{D_{in}}} \]
-This is the standard and mandatory initialization when training deep ReLU networks.
+ReLU zeroes out the negative half of the inputs, which roughly halves the variance at every layer. Kaiming initialization compensates by doubling the variance:
+\[ \text{std} = \sqrt{\frac{2}{D_{in}}}. \]
+This is the standard choice for deep ReLU networks. For convolutional layers, $D_{in}$ is the kernel size squared times the number of input channels.
 \end{keywordbox}
-
----
 
 \section{Gradient-Based Optimization Algorithms}
 
-From a theoretical standpoint, our objective is to minimize the total loss over the entire dataset:
-\[ L(W) = \frac{1}{N} \sum_{i=1}^N L_i(x_i, y_i, W) + \lambda R(W) \]
-The exact gradient requires summing over all $N$ training examples:
-\[ \nabla_W L(W) = \frac{1}{N} \sum_{i=1}^N \nabla_W L_i(x_i, y_i, W) + \lambda \nabla_W R(W) \]
-
-Computing this \textbf{Full Batch} gradient requires evaluating millions of samples at every parameter update, which is computationally prohibitive.
+The objective is the average loss over the training set, plus the regularization term:
+\[ L(W) = \frac{1}{N} \sum_{i=1}^N L_i(x_i, y_i, W) + \lambda R(W). \]
+The exact gradient therefore requires a full pass over all $N$ examples:
+\[ \nabla_W L(W) = \frac{1}{N} \sum_{i=1}^N \nabla_W L_i(x_i, y_i, W) + \lambda \nabla_W R(W). \]
+For large datasets this is too expensive. \textbf{Stochastic Gradient Descent (SGD)} approximates the gradient with a small random \textbf{minibatch} (32, 64 or 128 examples are common), so we can perform many cheap updates instead of a few expensive ones.
 
 \begin{keywordbox}
-\textbf{Stochastic Gradient Descent (SGD):} Instead of the full sum, SGD approximates the true gradient over a small random \textbf{minibatch} of examples (e.g., 32, 64, or 128). While this introduces stochastic variance, it allows frequent, computationally cheap updates that accelerate convergence.
+\textbf{Stochastic Gradient Descent (SGD):} instead of the full sum, SGD estimates the gradient on a small minibatch. The estimate is noisy, but the updates are much more frequent and the network converges faster in practice.
 \end{keywordbox}
-
----
 
 \section{Regularization in Deep Neural Networks}
 
-The objective of \textbf{Regularization} is to prevent models from overfitting training data by controlling model capacity. We add a parameter complexity penalty $R(W)$ to the empirical loss:
-\[ L_{total}(W, X) = \underbrace{L(W, X)}_{\text{Data Loss}} + \underbrace{\lambda R(W)}_{\text{Regularization Term}} \]
+The goal of \textbf{regularization} is to prevent overfitting by controlling the capacity of the model. We add a penalty $R(W)$ to the empirical loss:
+\[ L_{total}(W, X) = \underbrace{L(W, X)}_{\text{data loss}} + \underbrace{\lambda R(W)}_{\text{regularization}}. \]
+The hyperparameter $\lambda$ sets the strength of the penalty: with $\lambda=0$ the model only fits the training data and can overfit; as $\lambda \to \infty$ the penalty dominates and the model underfits.
 
-\begin{Notebox}
-\textbf{Role of the Hyperparameter $\lambda$:}
+The classical penalties are:
 \begin{itemize}[nosep, leftmargin=*]
-    \item $\lambda = 0$: The model focuses solely on fitting training data, risking \textbf{Overfitting}.
-    \item $\lambda \to \infty$: The penalty dominates, forcing all weights toward zero and causing \textbf{Underfitting}.
+    \item \textbf{L2 (weight decay):} $R(W) = \sum W^2$. It discourages large weights and spreads the representation across many neurons.
+    \item \textbf{L1 (Lasso):} $R(W) = \sum |W|$. It pushes less useful weights exactly to zero and performs feature selection.
 \end{itemize}
-\end{Notebox}
 
-Classic mathematical penalties include:
-\begin{itemize}[nosep, leftmargin=*]
-    \item \textbf{L2 Regularization (Weight Decay / Ridge):} $R(W) = \sum W^2$. Penalizes large weights quadratically, encouraging diffuse representations across all neurons.
-    \item \textbf{L1 Regularization (Lasso):} $R(W) = \sum |W|$. Drives less relevant weights exactly to zero, performing automatic feature selection.
-\end{itemize}
+Elastic net combines L1 and L2. Stochastic depth and fractional pooling are architectural variants: instead of adding a penalty to the loss, they inject randomness into the structure of the network during training.
 
 \subsection{Dropout}
 
@@ -271,53 +211,34 @@ Classic mathematical penalties include:
     \caption{Illustration of Dropout during training.}\label{fig:dropout}
 \end{figure}
 
-Introduced by Srivastava et al.~\cite{srivastava2014dropout}, \textbf{Dropout} is a stochastic regularization technique where individual neurons are randomly deactivated during training with probability $p$ (commonly $p=0.5$).
-\begin{itemize}[nosep, leftmargin=*]
-    \item \textbf{Prevents Co-adaptation:} Neurons cannot rely on the specific activations of neighboring units, forcing them to learn robust, self-reliant features.
-    \item \textbf{Ensemble Effect:} Dropout implicitly trains an exponential ensemble of shared-weight subnetworks ($2^N$ sub-architectures for an $N$-neuron layer).
-\end{itemize}
+Introduced by Srivastava et al.~\cite{srivastava2014dropout}, \textbf{Dropout} randomly deactivates individual neurons during training with probability $p$ (commonly $p=0.5$). This prevents neurons from relying on the specific activations of their neighbors and forces them to learn robust, self-reliant features. It also has an ensemble interpretation: dropout implicitly trains an exponential number of shared-weight subnetworks ($2^N$ for a layer with $N$ neurons).
 
 \subsubsection{Inverted Dropout}
-Because dropping neurons during training reduces the active sum of signals, the expected output at test time (when all neurons are active) would be scaled by $\frac{1}{1-p}$. To eliminate any scaling overhead at inference time, modern implementations use \textbf{Inverted Dropout} during training:
-\[ h_{\text{train}} = \frac{\text{mask} \odot x}{1-p} \]
-
-\begin{itemize}[leftmargin=*]
-    \item \textbf{Numerator ($\text{mask} \odot x$):} Drops a random fraction $p$ of the activations to zero.
-    \item \textbf{Denominator ($1-p$):} Inflates the surviving activations, ensuring that the expected activation value during training matches the deterministic magnitude at test time ($h_{\text{test}} = x$).
-\end{itemize}
+Because dropping neurons reduces the active sum of signals, the expected output at test time (when all neurons are active) would be scaled by $\frac{1}{1-p}$. Modern implementations avoid any scaling at inference time by using \textbf{Inverted Dropout} during training:
+\[ h_{\text{train}} = \frac{\text{mask} \odot x}{1-p}. \]
+The numerator drops a random fraction $p$ of the activations, while the denominator inflates the surviving ones so that their expected value matches the deterministic value at test time ($h_{\text{test}} = x$).
 
 \begin{examplebox}
-\textbf{Numerical Example of Inverted Dropout ($p=0.5$):} \\
-Given input $x = [10, 20, 30, 40]$ (Sum $= 100$) and mask $[1, 0, 1, 0]$:
-\[ \text{Masked output: } [10, 0, 30, 0] \quad (\text{Sum drops to } 40) \]
-\[ h_{\text{train}} = \frac{[10, 0, 30, 0]}{0.5} = [20, 0, 60, 0] \quad (\text{Scaled sum } = 80 \approx 100) \]
+\textbf{Numerical example ($p=0.5$):} for $x = [10, 20, 30, 40]$ and mask $[1, 0, 1, 0]$, the masked output is $[10, 0, 30, 0]$. Dividing by $1-p=0.5$ gives $[20, 0, 60, 0]$, so the expected sum is preserved.
 \end{examplebox}
 
 \subsection{The Common Pattern of Modern Regularization}
-Dropout illustrates the universal recipe of modern deep learning regularization:
-\begin{enumerate}
-    \item \textbf{Training:} Inject stochasticity or random noise.
-    \item \textbf{Testing:} Marginalize or average out the randomness to yield deterministic predictions.
-\end{enumerate}
-
----
+Dropout illustrates a pattern that appears in many modern regularizers: during training we inject randomness, and at test time we average it out (or approximate the average). Batch normalization is another example: it uses random minibatch statistics during training and fixed running statistics at test time.
 
 \section{Feature Normalization Techniques}
 
-To stabilize signal distributions and accelerate optimization in deep networks, activations are explicitly normalized across intermediate layers.
+To stabilize the signal and speed up optimization, we normalize the activations inside the network.
 
 \subsection{Batch Normalization}
-Introduced by Ioffe and Szegedy~\cite{ioffe2015batch}, Batch Normalization (BN) normalizes activations across the minibatch dimension, forcing each feature channel $k$ to zero mean and unit variance:
-\[ \widehat{x}^{(k)} = \frac{x^{(k)} - \text{E}[x^{(k)}]}{\sqrt{\text{Var}[x^{(k)}] + \epsilon}} \]
-where $\text{E}[x^{(k)}]$ and $\text{Var}[x^{(k)}]$ are the minibatch mean and variance, and $\epsilon$ prevents division by zero.
+Introduced by Ioffe and Szegedy~\cite{ioffe2015batch}, Batch Normalization (BN) normalizes each feature channel $k$ across the minibatch:
+\[ \widehat{x}^{(k)} = \frac{x^{(k)} - \text{E}[x^{(k)}]}{\sqrt{\text{Var}[x^{(k)}] + \epsilon}}, \]
+where the mean and variance are computed over the current minibatch and $\epsilon$ avoids division by zero.
 
-\subsubsection{Learnable Scale and Shift Parameters}
-To prevent rigid normalization from limiting network capacity, two learnable parameters ($\gamma$ and $\beta$) restore representational flexibility:
-\[ y^{(k)} = \gamma^{(k)} \widehat{x}^{(k)} + \beta^{(k)} \]
-If beneficial, the optimizer can recover the identity mapping by setting $\gamma^{(k)} = \sqrt{\text{Var}[x^{(k)}]}$ and $\beta^{(k)} = \text{E}[x^{(k)}]$.
+To avoid making the normalization too rigid, BN adds two learnable parameters:
+\[ y^{(k)} = \gamma^{(k)} \widehat{x}^{(k)} + \beta^{(k)}. \]
+If the network needs the original activations, it can learn $\gamma^{(k)} = \sqrt{\text{Var}[x^{(k)}]}$ and $\beta^{(k)} = \text{E}[x^{(k)}]$, which recovers the identity (up to the small $\epsilon$).
 
-\subsubsection{Training versus Test Phase}
-During training, statistics are calculated over the current minibatch. During inference, fixed global running averages computed during training are used, allowing BN to be mathematically folded into preceding linear layers with zero inference overhead.
+During training the statistics come from the current minibatch. At inference time we use running averages collected during training, so BN becomes a fixed linear operation and can be fused into the preceding layer.
 
 \subsection{Alternative Normalization Methods}
 
@@ -327,80 +248,62 @@ During training, statistics are calculated over the current minibatch. During in
     \caption{Comparison of different normalization methods across batch ($N$), channel ($C$), and spatial ($H, W$) dimensions.}\label{fig:normalization_methods}
 \end{figure}
 
-The choice among normalization methods depends on the axes across which statistics are aggregated (Figure~\ref{fig:normalization_methods}):
+The normalization methods differ in the axes over which they aggregate statistics (Figure~\ref{fig:normalization_methods}):
+\begin{itemize}[nosep, leftmargin=*]
+    \item \textbf{Batch Norm (BN):} across the batch and spatial dimensions, independently for each channel~\cite{ioffe2015batch}. It works well for vision models with large minibatches.
+    \item \textbf{Layer Norm (LN):} across all channels and spatial dimensions for each sample~\cite{ba2016layer}. It does not depend on the batch size, which makes it the standard choice for RNNs and Transformers.
+    \item \textbf{Instance Norm (IN):} across the spatial dimensions for each channel of each sample~\cite{ulyanov2016instance}. It is widely used in style transfer.
+    \item \textbf{Group Norm (GN):} across groups of channels for each sample~\cite{wu2018group}. It is batch-size independent while still allowing channel specialization.
+\end{itemize}
 
-\subsubsection{Batch Norm (BN)}
-Aggregates across the batch dimension $N$ and spatial dimensions $(H, W)$ independently for each channel $C$~\cite{ioffe2015batch}. Ideal for vision models with large minibatches.
+\section{Practical Training Recipe}
 
-\subsubsection{Layer Norm (LN)}
-Proposed by Ba et al.~\cite{ba2016layer}, LN aggregates across all channels $C$ and spatial dimensions for each individual sample $N$. Independent of batch size, making it the standard for RNNs and Transformers.
+The concepts above explain why a network can learn; this short section collects the practical steps that make training work in practice.
 
-\subsubsection{Instance Norm (IN)}
-Proposed by Ulyanov et al.~\cite{ulyanov2016instance}, IN aggregates strictly across spatial dimensions $(H, W)$ for each single channel of each single sample. Widely used in generative style transfer.
+\subsection{Data Preprocessing}
+Before training, we center and normalize the inputs. For images, a common choice is to subtract the per-channel mean; some models also divide by the per-channel standard deviation. This makes the loss less sensitive to small changes in the weights and speeds up optimization. For CIFAR-10, for example, we subtract the mean image or the per-channel mean from every image.
 
-\subsubsection{Group Norm (GN)}
-Introduced by Wu and He~\cite{wu2018group}, GN divides the channel dimension $C$ into distinct groups and aggregates across each group per sample. Provides batch-size independence while preserving channel specialization.
+\subsection{Early Stopping}
+We monitor the validation loss during training. When it stops improving, we stop training and keep the checkpoint with the best validation accuracy. Early stopping is a simple and effective regularizer: it prevents the model from continuing to fit the training set after it has started to overfit.
 
----
+\subsection{Choosing Hyperparameters}
+A practical recipe is:
+\begin{enumerate}[leftmargin=*]
+    \item check the initial loss (it should be reasonable, not NaN or enormous);
+    \item overfit a small subset of the data (the training accuracy should approach 100\%);
+    \item search a coarse grid of learning rates and weight decay values;
+    \item refine the grid around the best values and train longer.
+\end{enumerate}
+This is much cheaper than tuning many hyperparameters at once.
 
-\section{Chapter Summary and Conceptual Graph}
+\newpage
+\section{Recap: Key Concepts}
 
-The foundations developed in this chapter form an interconnected chain where each new concept resolves a specific mathematical failure mode or constraint introduced by earlier building blocks:
+The chapter can be read as a single chain: a parametric model produces scores, a loss measures the error, backpropagation computes the gradients, and the optimizer updates the weights. The remaining ingredients make this process stable and general.
 
-\begin{figure}[htbp]
+\begin{table}[htbp]
 \centering
-\begin{tikzpicture}[
-    node distance=0.6cm and 0cm,
-    conceptnode/.style={
-        rectangle, rounded corners=4pt, draw=ocre!80, fill=ocre!8,
-        line width=0.8pt, text width=0.85\textwidth, inner sep=5pt,
-        font=\sffamily\small
-    },
-    arrowline/.style={
-        ->, >=Stealth, line width=1pt, color=ocre!80
-    }
-]
-
-\node[conceptnode] (n1) {\textbf{1. Parametric Models \& Loss Functions}\\
-Linear scoring functions ($z = Wx + b$) unified with task-specific losses (MSE, BCE, Softmax NLL).};
-
-\node[conceptnode, below=of n1] (n2) {\textbf{2. Deep Networks \& Backpropagation}\\
-Stacking layers creates hierarchical representations; gradients propagate backward via the chain rule.};
-
-\node[conceptnode, below=of n2] (n3) {\textbf{3. Activation Functions (Non-Linearity)}\\
-Introduces non-linear boundaries (ReLU, GELU) to prevent network collapse into a single matrix.};
-
-\node[conceptnode, below=of n3] (n4) {\textbf{4. Variance Scaling Weight Initialization}\\
-Scales initial weights dynamically ($1/\sqrt{D_{in}}$ for Xavier, $\sqrt{2/D_{in}}$ for He) to prevent vanishing signals.};
-
-\node[conceptnode, below=of n4] (n5) {\textbf{5. Gradient-Based Optimization (SGD)}\\
-Replaces intractable full-batch gradients with stochastic minibatch approximations for scalable updates.};
-
-\node[conceptnode, below=of n5] (n6) {\textbf{6. Deep Regularization (L1/L2 \& Inverted Dropout)}\\
-Penalizes weight norms and stochastically drops units to break co-adaptation while preserving signal energy.};
-
-\node[conceptnode, below=of n6] (n7) {\textbf{7. Feature Normalization (BN, LN, GN)}\\
-Standardizes internal activations to zero mean and unit variance, smoothing the loss landscape.};
-
-\draw[arrowline] (n1) -- (n2);
-\draw[arrowline] (n2) -- (n3);
-\draw[arrowline] (n3) -- (n4);
-\draw[arrowline] (n4) -- (n5);
-\draw[arrowline] (n5) -- (n6);
-\draw[arrowline] (n6) -- (n7);
-
-\end{tikzpicture}
-\caption{Conceptual roadmap of deep learning foundations and optimization.}\label{fig:ch1_roadmap}
-\end{figure}
+\small
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{p{0.21\textwidth} p{0.34\textwidth} p{0.33\textwidth}}
+\toprule
+\textbf{Concept} & \textbf{Key idea} & \textbf{Formula / rule} \\
+\midrule
+Parametric model & Linear scores from input and weights & $z = Wx+b$ \\
+Loss & Measures the error; depends on the task & MSE, BCE, cross-entropy \\
+Gradient descent & Move against the gradient & $W \leftarrow W - \alpha \nabla_W L$ \\
+Backpropagation & Chain rule on the computational graph & local gradients + gate patterns \\
+Activation functions & Introduce non-linearity; ReLU is the default & ReLU, Leaky ReLU, ELU, GELU \\
+Initialization & Keep the signal variance stable & Xavier $1/\sqrt{D_{in}}$, He $\sqrt{2/D_{in}}$ \\
+SGD & Approximate the gradient with a minibatch & noisy but frequent updates \\
+Regularization & Control capacity and overfitting & L1/L2, dropout, $\lambda$ \\
+Normalization & Stabilize the activations & BN, LN, IN, GN \\
+Practical recipe & Preprocess, early-stop, tune & mean subtraction, validation loss, grid search \\
+\bottomrule
+\end{tabular}
+\caption{One-page recap of the key concepts in this chapter.}\label{tab:ch1_recap}
+\end{table}
 
 \begin{InsightBox}
-\textbf{The Logical Connections Between Nodes:}
-\begin{itemize}[leftmargin=*]
-    \item \textbf{From Node 1 to 2:} A single linear layer cannot approximate complex non-linear functions; we must stack layers into deep networks, which in turn requires Backpropagation to compute parameter gradients.
-    \item \textbf{From Node 2 to 3:} Stacking linear transformations collapses into a single linear map ($W_2 W_1 x = W' x$); activation functions are strictly required to introduce non-linear expressivity.
-    \item \textbf{From Node 3 to 4:} Deep non-linear networks are prone to signal decay at initialization. Naive random noise collapses activations to zero, causing vanishing gradients. Variance scaling (He/Xavier) dynamically stabilizes signal spread.
-    \item \textbf{From Node 4 to 5:} With stable gradients established, evaluating the loss over millions of examples is computationally prohibitive; Stochastic Gradient Descent (SGD) enables rapid iterative updates via minibatches.
-    \item \textbf{From Node 5 to 6:} High-capacity deep models easily overfit training data. Regularization (weight decay and Inverted Dropout) controls capacity by penalizing weights and enforcing distributed representations.
-    \item \textbf{From Node 6 to 7:} Throughout deep optimization, intermediate layer distributions continuously drift; Batch, Layer, and Group Normalization re-center activations to maintain high learning rates and stable convergence.
-\end{itemize}
+\textbf{The one-sentence version:} a neural network is a parametric function trained by gradient descent; backpropagation supplies the gradients, activations provide non-linearity, initialization and normalization keep the signal healthy, and regularization prevents memorization.
 \end{InsightBox}

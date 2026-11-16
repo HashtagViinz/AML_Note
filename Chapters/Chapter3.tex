@@ -386,6 +386,16 @@ At each step, the hidden state $h_t$ projects raw scores (logits) $y_t$, which a
     \item \textbf{Stopping Criterion:} Sampling the special token \texttt{<END>} signals that the sentence is complete, terminating the autoregressive loop with final caption \textit{``straw hat''}.
 \end{enumerate}
 
+\subsection{Stacked RNNs}
+
+A single recurrent layer already has a temporal axis, but deep sequence models also add a \textbf{depth} axis by stacking several RNN layers, as illustrated in the ``Multilayer RNNs'' slide. At every time step $t$, the hidden state of layer $\ell$ is computed from its own previous state and from the output of the layer below:
+\begin{equation}
+    h_t^{(\ell)} = \tanh\left(W_{hh}^{(\ell)} h_{t-1}^{(\ell)} + W_{xh}^{(\ell)} h_t^{(\ell-1)} + b^{(\ell)}\right),
+\end{equation}
+with $h_t^{(0)} = x_t$. The lower layers learn short-range, local patterns (for example, phonemes or word fragments), while the upper layers combine them into longer-range and more abstract representations, in the same hierarchical spirit as stacked convolutional layers in Chapter~\ref{ch:convnets}.
+
+Stacking increases capacity but also cost: the forward pass is sequential in time and now has to traverse every layer, and backpropagation must flow both \emph{back in time} and \emph{down in depth}. The same vanishing-gradient mechanisms studied for a single layer therefore apply at every level.
+
 \section{Backpropagation Through Time and Gradient Flow}
 
 Training an RNN requires computing the gradient of the total loss $L$ with respect to the shared weight matrices $W$. This process is known as \textbf{Backpropagation Through Time (BPTT)}~\cite{werbos1990backpropagation} (Slides 141--144).
@@ -537,65 +547,50 @@ In an LSTM, backpropagating from $c_t$ to $c_{t-1}$ along the upper cell state h
 \end{itemize}
 \end{InsightBox}
 
-\newpage
-\section{Chapter Summary and Conceptual Graph}
+\subsection{LSTM versus GRU}
 
-The concepts developed in this chapter trace the evolution of sequence models from parallel temporal convolutions to recurrent memory networks and additive gradient highways:
+The \textbf{Gated Recurrent Unit (GRU)}~\cite{cho2014learning} is a simpler gated alternative to the LSTM. It keeps a single hidden state $h_t$ and replaces the LSTM's three gates and separate cell state with two gates:
+\begin{align}
+    r_t &= \sigma\left(W_r [h_{t-1}; x_t]\right), \\
+    z_t &= \sigma\left(W_z [h_{t-1}; x_t]\right), \\
+    n_t &= \tanh\left(W_n [r_t \odot h_{t-1}; x_t]\right), \\
+    h_t &= (1-z_t)\odot h_{t-1} + z_t \odot n_t.
+\end{align}
+Here $r_t$ is the \textbf{reset gate}, which controls how much of the previous state is used to propose the candidate $n_t$, and $z_t$ is the \textbf{update gate}, which balances the old state against the new candidate. The additive update $(1-z_t)\odot h_{t-1} + z_t\odot n_t$ plays the same role as the LSTM cell-state highway: it creates a short path for gradients and mitigates vanishing.
+
+Compared with the LSTM, the GRU has fewer parameters, is faster to train, and often reaches similar accuracy; the LSTM offers finer control through its separate cell state and forget gate and can be preferable on long or memory-heavy sequences. Both are standard choices in practice, and the lecture summary groups them as the two gated architectures whose \emph{additive interactions} improve gradient flow.
+
+\newpage
+\section{Recap: Key Concepts}
+
+The chapter follows one main thread: sequences carry order, convolutions process them in parallel but with a bounded receptive field, recurrent networks keep a hidden state but suffer from unstable gradients, and gating restores a stable path for long-range information.
+
+\begin{table}[htbp]
+\centering
+\small
+\renewcommand{\arraystretch}{1.15}
+\begin{tabular}{p{0.20\textwidth} p{0.35\textwidth} p{0.33\textwidth}}
+\toprule
+\textbf{Concept} & \textbf{Key idea} & \textbf{Formula / rule} \\
+\midrule
+Sequence task & Variable-length input/output with temporal order & one-to-many, many-to-one, many-to-many \\
+1D convolution & Shared filters slide over time & local pattern detector \\
+Causality & Prediction at $t$ cannot see the future & mask $t+1, \dots, T$ \\
+Dilation & Exponentially expand the receptive field & $d_\ell = 2^\ell$ \\
+RNN & Hidden state as dynamic memory & $h_t = \tanh(W_{xh}x_t + W_{hh}h_{t-1} + b_h)$ \\
+Seq2seq & Encoder summarizes, decoder generates & encoder--decoder \\
+Teacher forcing & Feed ground-truth tokens during training & stable training signal \\
+BPTT & Backpropagate through the unrolled graph & repeated multiplication by $W_{hh}^T$ \\
+Gradient clipping & Rescale gradients above a threshold & $g \leftarrow \tau g / \|g\|$ \\
+LSTM & Gated cell-state highway & $c_t = f \odot c_{t-1} + i \odot g$ \\
+GRU & Two gates, one hidden state & reset $r_t$, update $z_t$ \\
+Stacked RNN & Add depth on top of time & layer $\ell$ receives $h_t^{(\ell-1)}$ \\
+Image captioning & CNN features condition an RNN decoder & $h_t = \tanh(W_{xh}x_t + W_{hh}h_{t-1} + W_{ih}v)$ \\
+\bottomrule
+\end{tabular}
+\caption{One-page recap of the key concepts in this chapter.}\label{tab:ch3_recap}
+\end{table}
 
 \begin{InsightBox}
-\textbf{The Logical Connections Between Nodes:}
-\begin{itemize}[leftmargin=*]
-    \item \textbf{From Node 1 to 2:} Handling variable-length sequences with temporal ordering prompts using 1D convolutions; enforcing causality prevents future lookahead, while dilation expands context without sacrificing parallel training.
-    \item \textbf{From Node 2 to 3:} Despite their parallel speed, TCNs have a fixed receptive field buffer; Recurrent Neural Networks introduce true dynamic memory via an evolving hidden state $h_t$ with parameter sharing.
-    \item \textbf{From Node 3 to 4:} Training recurrent graphs requires unrolling them through time and calculating loss gradients backwards across all time steps via Backpropagation Through Time (BPTT).
-    \item \textbf{From Node 4 to 5:} Unrolling across long horizons exposes BPTT to repeated multiplications by $W_{hh}^{T-1}$. If the spectral radius exceeds 1, gradients explode (controlled via Gradient Clipping); if less than 1, gradients vanish exponentially.
-    \item \textbf{From Node 5 to 6:} Because vanishing gradients represent an architectural failure of Vanilla RNNs, Hochreiter and Schmidhuber redesigned the memory cell: separating working state $h_t$ from a dedicated cell state $c_t$.
-    \item \textbf{From Node 6 to 7:} Regulating the cell state via input, forget, and output gates ($i, f, o$) and applying purely additive updates ($+$) establishes an uninterrupted gradient highway, allowing LSTMs to preserve long-range dependencies across hundreds of steps.
-\end{itemize}
+\textbf{The one-sentence version:} a sequence model must carry information across time; TCNs do it with causal dilated convolutions, RNNs with a hidden state, and LSTMs/GRUs with gated additive paths that keep gradients alive over long horizons.
 \end{InsightBox}
-
-\begin{figure}[htbp]
-\centering
-\begin{tikzpicture}[
-    node distance=0.6cm and 0cm,
-    conceptnode/.style={
-        rectangle, rounded corners=4pt, draw=ocre!80, fill=ocre!8,
-        line width=0.8pt, text width=0.85\textwidth, inner sep=5pt,
-        font=\sffamily\small
-    },
-    arrowline/.style={
-        ->, >=Stealth, line width=1pt, color=ocre!80
-    }
-]
-
-\node[conceptnode] (n1) {\textbf{1. Sequential \& Temporal Data}\\
-Variable-length ordered tokens/timesteps requiring dynamic input/output mappings (Seq2Seq, forecasting).};
-
-\node[conceptnode, below=of n1] (n2) {\textbf{2. Temporal Convolutional Networks (TCN)}\\
-Applies parallel 1D convolutions; enforces strict causality and exponential dilation to expand receptive fields.};
-
-\node[conceptnode, below=of n2] (n3) {\textbf{3. Recurrent Neural Networks (RNN)}\\
-Maintains an internal hidden state ($h_t$) as dynamic memory, reusing transition parameters $W$ across all steps.};
-
-\node[conceptnode, below=of n3] (n4) {\textbf{4. Backpropagation Through Time (BPTT)}\\
-Unrolls computation across time, backpropagating gradients through repeated multiplications of $W_{hh}$.};
-
-\node[conceptnode, below=of n4] (n5) {\textbf{5. Gradient Failure: Vanishing \& Exploding}\\
-Powers $W_{hh}^{T-1}$ cause exploding gradients (fixed by clipping) or vanishing gradients (structural amnesia).};
-
-\node[conceptnode, below=of n5] (n6) {\textbf{6. LSTM Dual-State Architecture}\\
-Explicitly decouples short-term working output ($h_t$) from an uninterrupted long-term cell state ($c_t$).};
-
-\node[conceptnode, below=of n6] (n7) {\textbf{7. Gating Valves \& Additive Highway}\\
-Sigmoid gates ($i, f, o$) modulate information flow; additive cell updates eliminate matrix multiplications and prevent gradient decay.};
-
-\draw[arrowline] (n1) -- (n2);
-\draw[arrowline] (n2) -- (n3);
-\draw[arrowline] (n3) -- (n4);
-\draw[arrowline] (n4) -- (n5);
-\draw[arrowline] (n5) -- (n6);
-\draw[arrowline] (n6) -- (n7);
-
-\end{tikzpicture}
-\caption{Conceptual roadmap of sequence modeling, recurrent dynamics, and LSTMs.}\label{fig:ch3_roadmap}
-\end{figure}

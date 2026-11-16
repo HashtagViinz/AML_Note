@@ -124,21 +124,15 @@ The decoding step unfolds across five distinct computational stages:
     \end{equation}
     Vector $c_2$ functions as a soft, differentiable spotlight: irrelevant past tokens (\textit{“we”, “are”}) and future objects (\textit{“bread”}) are heavily suppressed, channeling pure semantic information about the eating action into the decoder. 
 
-    The decoder state is then updated via the recurrent transition operator:
+    The decoder recurrent state is then updated via the transition operator:
     \begin{equation}
         s_2 = g_U(y_1, s_1, c_2)
     \end{equation}
-    To understand the concrete mechanics of $g_U$, note that it integrates three distinct sources of information:
-    \begin{itemize}[leftmargin=*]
-        \item $y_1$: The embedding of the previously generated token (\textit{“estamos”}).
-        \item $s_1$: The previous recurrent hidden state (carrying decoder past history).
-        \item $c_2$: The dynamic context vector synthesized by the attention mechanism.
-    \end{itemize}
-    If the decoder is implemented as a standard recurrent layer, the transition function $g_U$ expands explicitly as:
+    where the transition function $g_U$ combines the previous recurrent state $s_1$, the previous emitted token embedding $y_1$ (\textit{“estamos”}), and the newly computed dynamic context vector $c_2$. For a vanilla RNN decoder, this expands to
     \begin{equation}
-        s_2 = \tanh\Big( \underbrace{U_{ss} \, s_1}_{\text{previous state}} + \underbrace{U_{ys} \, y_1}_{\text{previous token}} + \underbrace{U_{cs} \, c_2}_{\text{attention context}} + b_U \Big)
+        s_2 = \tanh\left(U_{ss}s_1 + U_{ys}y_1 + U_{cs}c_2 + b_U\right),
     \end{equation}
-    where $U = \{U_{ss}, U_{ys}, U_{cs}, b_U\}$ denotes the collection of learnable projection matrices and bias terms of the decoder cell. In gated implementations (such as the Gated Recurrent Unit used by Bahdanau et al.), $g_U$ represents the gate equations (reset and update gates) operating over the concatenated vector $[y_1; s_1; c_2]$.
+    where $U_{ss}$, $U_{ys}$, $U_{cs}$, and $b_U$ are learnable parameters; gated cells such as the GRU replace the single $\tanh$ with their gate equations.
 
     Conditioned on the updated state $s_2$, the linear vocabulary head projects $s_2$ through Softmax to emit:
     \begin{equation}
@@ -217,21 +211,18 @@ Given an input matrix $X \in \mathbb{R}^{N \times D}$ representing $N$ tokens of
     \item \textbf{Value ($V = X W_V \in \mathbb{R}^{N \times D_v}$):} The actual informational content retrieved and blended into the updated representation.
 \end{itemize}
 
-The pairwise alignment score between token $j$ (query) and token $i$ (key) is evaluated via their dot product, scaled by the square root of the key dimension $D_k$:
+The pairwise alignment score between query token $i$ and key token $j$ is evaluated via their dot product, scaled by the square root of the key dimension $D_k$:
 \begin{equation}
-    e_{i, j} = \frac{q_j^T k_i}{\sqrt{D_k}}
+    e_{i, j} = \frac{q_i^T k_j}{\sqrt{D_k}}
 \end{equation}
+Applying a Softmax over the keys turns these scores into attention weights $\alpha_{i,j} = \exp(e_{i,j}) / \sum_{j'} \exp(e_{i,j'})$, and the output for token $i$ is the weighted sum $\sum_j \alpha_{i,j} v_j$.
 In compact matrix notation, the \textbf{Scaled Dot-Product Attention} introduced by Vaswani et al.~\cite{vaswani2017attention} is evaluated simultaneously across all tokens:
 \begin{equation}
     \operatorname{Attention}(Q, K, V) = \operatorname{softmax}\left(\frac{Q K^T}{\sqrt{D_k}}\right) V
     \label{eq:scaled_dot_product}
 \end{equation}
-
 \begin{Notebox}
-\textbf{Why Divide by $\sqrt{D_k}$?} \\
-Assume the components of query $q$ and key $k$ are independent random variables with zero mean and unit variance. Their dot product $q^T k = \sum_{m=1}^{D_k} q_m k_m$ has mean $0$ and variance $D_k$. 
-
-For large dimensions (e.g., $D_k = 64$ or $D_k = 128$), the variance of the dot products becomes substantial ($D_k \gg 1$), resulting in large positive or negative logits. Passing large inputs into Softmax forces its outputs to saturate near $0$ or $1$, causing the local gradient of Softmax to collapse exponentially toward zero. Dividing by $\sqrt{D_k}$ normalizes the variance back to $1$, preserving healthy gradient flow throughout training.
+\textbf{Why Divide by $\sqrt{D_k}$?} Assume that the components of a query $q$ and a key $k$ are independent random variables with zero mean and unit variance. Their dot product $q^T k = \sum_{m=1}^{D_k} q_m k_m$ then has mean $0$ and variance $D_k$. For large dimensions (e.g., $D_k = 64$ or $128$), the logits become large, pushing Softmax into saturation where its gradient is almost zero. Dividing by $\sqrt{D_k}$ restores unit variance and keeps the gradient healthy.
 \end{Notebox}
 
 \subsection{Maximum Path Length and Computational Complexity}
@@ -310,12 +301,17 @@ Two primary paradigms exist for generating $p_j$:
     where $pos$ is the token position and $i \in \{0, \dots, D/2 - 1\}$ indexes the channel dimension.
 \end{itemize}
 
-\begin{keywordbox}
-\textbf{The Linear Relative Transformation Property} \\
-Because $\sin(\alpha + \beta) = \sin\alpha\cos\beta + \cos\alpha\sin\beta$ and $\cos(\alpha + \beta) = \cos\alpha\cos\beta - \sin\alpha\sin\beta$, for any fixed offset $k$, the positional encoding at position $pos + k$ can be represented as a linear transformation of the encoding at position $pos$:
-\[ PE_{(pos+k)} = M_k \cdot PE_{(pos)} \]
-where $M_k \in \mathbb{R}^{D \times D}$ is a deterministic rotation matrix. This allows self-attention to easily learn to attend based on \textbf{relative positional offsets}.
-\end{keywordbox}
+\subsection{Relative Positional Encoding}
+
+Absolute positional encodings add a vector $p_j$ that depends only on the absolute index $j$. An alternative, introduced by Shaw et al.~\cite{shaw2018self} and discussed in the course slides, injects the \emph{relative} distance $i-j$ directly into the attention computation:
+\begin{equation}
+    e_{i,j} = \frac{q_i^T\left(k_j + r_{i-j}^{K}\right)}{\sqrt{D_k}},
+\end{equation}
+and the value aggregation becomes
+\begin{equation}
+    z_i = \sum_j \alpha_{i,j}\left(v_j + r_{i-j}^{V}\right),
+\end{equation}
+where $r_{i-j}^{K}$ and $r_{i-j}^{V}$ are learned embeddings indexed by the relative offset $i-j$ (often clipped to a maximum distance). The model therefore reasons in terms of \emph{how far apart} two tokens are rather than \emph{where} they are, which improves generalization to lengths and positions not seen during training. Relative encodings are common in speech, music, and long-document Transformers.
 
 \subsection{Masked Self-Attention (Causal Attention)}
 
@@ -325,7 +321,7 @@ In an RNN, causality is naturally enforced by sequential step-by-step execution.
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=0.88\textwidth]{Pictures/masked_self_attention_matrix.png}
+    \includegraphics[width=0.88\textwidth,trim=0 0 0 42,clip]{Pictures/masked_self_attention_matrix.png}
     \caption{Masked Self-Attention with causal masking (from course slides). Setting future alignment entries to $-\infty$ forces their Softmax probabilities to zero, preventing information leakage while enabling full training parallelization across time.}\label{fig:masked_self_attention_matrix}
 \end{figure}
 
@@ -357,7 +353,7 @@ Multi-Head Attention applies the exact same philosophy to attention: by learning
 
 For $H$ attention heads, the input dimension $D$ is partitioned into head dimension $D_k = D / H$:
 \begin{equation}
-    \operatorname{head}_i = \operatorname{Attention}\left(Q W_i^Q, \, K W_i^K, \, V W_i^V\right), \quad i \in \{1, \dots, H\}
+    \operatorname{head}_i = \operatorname{Attention}\left(X W_i^Q, \, X W_i^K, \, X W_i^V\right), \quad i \in \{1, \dots, H\}
 \end{equation}
 where $W_i^Q \in \mathbb{R}^{D \times D_k}$, $W_i^K \in \mathbb{R}^{D \times D_k}$, and $W_i^V \in \mathbb{R}^{D \times D_v}$. The individual outputs are concatenated and linearly projected via output matrix $W_O \in \mathbb{R}^{H D_v \times D}$:
 \begin{equation}
@@ -466,6 +462,10 @@ The integration of attention and Transformers progressively transformed vision-t
     \item \textbf{Pure Transformers (From Pixels to Language):} Convolutions and recurrences are completely removed. The visual image and output text are processed entirely within a unified Transformer architecture.
 \end{enumerate}
 
+\subsection{The Image Transformer and Local Self-Attention}
+
+The first vision adaptation, the \textbf{Image Transformer}, treats image pixels or patches as tokens and applies the standard Transformer encoder-decoder. The obstacle is cost: full self-attention over all pixels is quadratic in the number of pixels, which is prohibitive for a megapixel image. The solution is \textbf{local self-attention}: each query at position $(x,y)$ attends only to a local neighborhood $m_1, \dots, m_k$ around it, as shown in the ``Image Transformer Layer'' slide. The rest of the block is a standard Transformer layer (residual connection, LayerNorm, and feed-forward network). Local attention preserves the visual locality prior while still allowing content-based weighting inside the window.
+
 \subsection{Vision Transformers (ViT)}
 
 Dosovitskiy et al.~\cite{dosovitskiy2020image} proved that pure Transformer architectures could match or surpass Convolutional Networks on large-scale computer vision benchmarks with the introduction of the \textbf{Vision Transformer (ViT)}, illustrated in Figure~\ref{fig:vit_architecture_patches}.
@@ -479,9 +479,9 @@ Dosovitskiy et al.~\cite{dosovitskiy2020image} proved that pure Transformer arch
 The ViT formulation treats image patches as words in a sentence:
 
 \begin{enumerate}[leftmargin=*]
-    \item \textbf{Patch Extraction and Linear Embedding:} An image $x \in \mathbb{R}^{H \times W \times C}$ is partitioned into a sequence of $N = \frac{HW}{P^2}$ non-overlapping square patches of size $P \times P$ (typically $P=16$). Each flattened patch $x_p^i \in \mathbb{R}^{P^2 C}$ is linearly projected to dimension $D$ via a trainable embedding matrix $E$:
+    \item \textbf{Patch Extraction and Linear Embedding:} An image $x \in \mathbb{R}^{H \times W \times C}$ is partitioned into $N = HW/P^2$ non-overlapping patches of size $P \times P$ (typically $P=16$). Each flattened patch $x_p^i \in \mathbb{R}^{P^2 C}$ is linearly projected to dimension $D$ through a trainable embedding matrix $E$. The resulting sequence, prepended with the \texttt{[CLS]} token, is
     \begin{equation}
-        z_0 = \left[x_{\text{class}}; \, x_p^1 E; \, x_p^2 E; \, \dots; \, x_p^N E\right] + E_{\text{pos}}
+        z_0 = \left[x_{\text{class}}; \, x_p^1 E; \, x_p^2 E; \, \dots; \, x_p^N E\right] + E_{\text{pos}},
     \end{equation}
     where $E_{\text{pos}} \in \mathbb{R}^{(N+1) \times D}$ is a learnable 1D positional embedding tensor.
     
@@ -545,8 +545,9 @@ To solve this dilemma, Devlin et al.~\cite{devlin2019bert} introduced \textbf{BE
     \item \textbf{Bidirectional Context Processing:} The corrupted sequence is fed through a deep Transformer encoder, where every token attends freely to all other tokens in both directions.
     \item \textbf{Selective Cross-Entropy Loss:} A classification head over the vocabulary predicts the original identity of the masked tokens. The training loss considers \textbf{only} the predictions at the masked positions:
     \begin{equation}
-        L_{\text{MLM}} = -\sum_{i \in \text{masked}} \log P(x_i | \widetilde{X})
+        L_{\text{MLM}} = -\sum_{i \in \text{masked}} \log P(x_i \mid \widetilde{X}),
     \end{equation}
+    where $\widetilde{X}$ is the corrupted input sequence; predictions at unmasked positions are ignored.
 \end{enumerate}
 
 \begin{Notebox}
@@ -559,6 +560,10 @@ Course Slide 92 emphasizes this fundamental optimization trade-off:
 \end{Notebox}
 
 Alongside MLM, BERT was trained on a secondary objective: \textbf{Next Sentence Prediction (NSP)}, where the model predicts whether two paired input sentences appeared consecutively in the original text or were randomly paired.
+
+\subsubsection{Fine-Tuning BERT}
+
+After pre-training, BERT is adapted to a downstream task by attaching a small task-specific head and training on labeled data. For sentence-level classification, the final state of the \texttt{[CLS]} token is fed to the head; for token-level tasks such as named entity recognition, the state of each token is classified. The encoder can be updated end-to-end with a small learning rate, or frozen and used as a fixed feature extractor. Fine-tuning is much cheaper than pre-training and is the standard transfer-learning recipe for NLP.
 
 \subsection{\texorpdfstring{ELECTRA:}{ELECTRA:} Efficient Pre-training as Discriminators}
 
@@ -583,91 +588,58 @@ Course Slide 99 highlights the primary technique for solving this operational bo
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=0.88\textwidth]{Pictures/knowledge_distillation_teacher.png}
+    \includegraphics[width=0.80\textwidth]{Pictures/knowledge_distillation_teacher.png}
     \caption{Knowledge Distillation for Transformer model compression (Slide 99). A high-capacity Teacher network generates soft probability distributions over unlabeled data, supervising a compact Student model.}\label{fig:knowledge_distillation_teacher}
 \end{figure}
 
 The distillation protocol proceeds through three distinct phases:
 \begin{enumerate}[leftmargin=*]
-    \item \textbf{Train the Teacher Network:} A large, high-capacity Transformer (e.g., BERT-Large) is trained using standard pre-training and task fine-tuning to achieve maximum accuracy.
-    \item \textbf{Soft Target Generation:} The frozen Teacher evaluates a massive corpus of unlabeled data, generating soft probability distributions over classes:
+    \item \textbf{Train the Teacher Network:} A large, high-capacity Transformer (such as BERT-Large) is trained using standard pre-training and task fine-tuning to reach peak accuracy.
+    \item \textbf{Soft Target Generation:} The frozen Teacher evaluates a massive corpus of unlabeled data, generating softened probability distributions over classes:
     \begin{equation}
-        q_i = \frac{\exp(z_i / T)}{\sum_j \exp(z_j / T)}
+        q_i = \frac{\exp(z_i / T)}{\sum_j \exp(z_j / T)},
     \end{equation}
-    where $T > 1$ is the distillation \textbf{temperature}, which softens output distributions to reveal the \textit{``dark knowledge''} (relative probabilities assigned to incorrect classes).
-    \item \textbf{Train the Student Network:} A much smaller Student model (e.g., 50x smaller, such as DistilBERT or compact BERT~\cite{turc2019well}) is trained to mimic the Teacher's soft outputs by minimizing Kullback-Leibler (KL) divergence or Cross-Entropy:
+    where $T > 1$ is the distillation \textbf{temperature}. Raising $T$ softens the distribution and reveals the \textit{``dark knowledge''}---the relative probabilities assigned to non-target classes.
+    \item \textbf{Train the Student Network:} A much smaller Student model (e.g., DistilBERT or compact BERT~\cite{turc2019well}) is trained to match the Teacher's soft outputs while also fitting the ground-truth hard labels:
     \begin{equation}
-        L_{\text{distill}} = \alpha L_{\text{hard}}(y_{\text{student}}, y_{\text{true}}) + (1 - \alpha) T^2 \operatorname{KL}\left(q_{\text{student}} \,\|\, q_{\text{teacher}}\right)
+        L_{\text{distill}} = \alpha L_{\text{hard}}(y_{\text{student}}, y_{\text{true}}) + (1-\alpha) T^2 \operatorname{KL}\left(q_{\text{student}} \,\|\, q_{\text{teacher}}\right).
     \end{equation}
+    The factor $T^2$ compensates for the smaller gradients produced by the softened distribution.
 \end{enumerate}
 
 Empirically (Slide 100), distilling a Teacher into a smaller model yields substantially higher accuracy than training the smaller model from scratch directly on labeled data. Knowledge distillation allows production systems to retain over 97\% of BERT's performance while operating at a fraction of the inference latency.
 
 
-\newpage
-\section{Chapter Summary and Conceptual Graph}
+\section{Recap: Key Concepts}
 
-The concepts developed in this chapter establish the architectural foundations of modern attention and Transformer networks, tracing the path from recurrent bottlenecks to pure attention and self-supervised foundation models:
+The chapter follows a single arc: the fixed context vector of seq2seq creates a bottleneck; attention removes it by letting the decoder look back at the encoder; self-attention generalizes the idea to all pairs of tokens; the Transformer packages self-attention into a parallel architecture; and large-scale pre-training turns it into a foundation model.
+
+\begin{table}[htbp]
+\centering
+\small
+\renewcommand{\arraystretch}{1.15}
+\begin{tabular}{p{0.20\textwidth} p{0.35\textwidth} p{0.33\textwidth}}
+\toprule
+\textbf{Concept} & \textbf{Key idea} & \textbf{Formula / rule} \\
+\midrule
+Seq2seq bottleneck & One fixed context vector $c=h_T$ & fails on long sequences \\
+Additive attention & Decoder queries encoder states & $e_{t,i}=v^T\tanh(W_s s_{t-1}+W_h h_i)$ \\
+Spatial attention & Attention over image regions & 2D feature grid \\
+Self-attention & Tokens attend to tokens in the same sequence & $Q=XW_Q$, $K=XW_K$, $V=XW_V$ \\
+Scaled dot-product & Compare queries and keys, then mix values & $\operatorname{softmax}(QK^T/\sqrt{D_k})V$ \\
+Multi-head & Several attention subspaces in parallel & $\operatorname{Concat}(\operatorname{head}_1,\dots,\operatorname{head}_H)W_O$ \\
+Positional encoding & Inject order into a permutation-equivariant model & sinusoidal or learned; relative offsets \\
+Causal mask & Prevent access to future tokens & $M_{i,j}=-\infty$ for $j>i$ \\
+Transformer block & Attention + MLP with residuals and LayerNorm & $x+\operatorname{SubLayer}(x)$ \\
+ViT & Image patches as tokens & $z_0=[x_{\text{class}};x_p^1E;\dots]+E_{\text{pos}}$ \\
+BERT / MLM & Predict masked tokens with bidirectional context & $L_{\text{MLM}}=-\sum_{i\in\text{masked}}\log P(x_i|\widetilde{X})$ \\
+ELECTRA & Discriminate real from replaced tokens & 100\% of tokens give loss \\
+Distillation & Small student mimics large teacher & $q_i=\operatorname{softmax}(z_i/T)$ \\
+\bottomrule
+\end{tabular}
+\caption{One-page recap of the key concepts in this chapter.}\label{tab:ch4_recap}
+\end{table}
 
 \begin{InsightBox}
-\textbf{The Logical Connections Between Nodes:}
-\begin{itemize}[leftmargin=*]
-    \item \textbf{From Node 1 to 2:} The fixed-dimensional bottleneck vector $c=h_T$ of Vanilla Seq2Seq degrades on long sequences; Bahdanau attention resolves this by computing dynamic, content-based alignments $c_t = \sum_i \alpha_{t,i} h_i$.
-    \item \textbf{From Node 2 to 3:} Recognizing that attention operates over unordered sets allows extending attention to spatial 2D convolutional grids, enabling models to dynamically focus on image regions during caption generation.
-    \item \textbf{From Node 3 to 4:} Eliminating recurrent transitions entirely, Self-Attention allows tokens within the same sequence to interact directly via Queries, Keys, and Values with a constant $O(1)$ maximum path length.
-    \item \textbf{From Node 4 to 5:} Because self-attention is permutation equivariant, Positional Encodings (sinusoidal or learned) are added to inject temporal ordering, while Causal Masking ($-\infty$) enforces autoregressive validity in parallel.
-    \item \textbf{From Node 5 to 6:} Wrapping Multi-Head Self-Attention with residual connections, Layer Normalization, and point-wise MLPs creates the complete Transformer Encoder and Decoder blocks.
-    \item \textbf{From Node 6 to 7:} Partitioning images into $16 \times 16$ patches translates 2D vision into token sequences, enabling Vision Transformers (ViT) to outperform ResNets at scale despite minimal hard-coded inductive biases.
-    \item \textbf{From Node 7 to 8:} Transformers unlock massive self-supervised pre-training via Masked Language Modeling (BERT) and discriminative Replaced Token Detection (ELECTRA), with Knowledge Distillation enabling real-time production deployment.
-\end{itemize}
+\textbf{The one-sentence version:} attention replaces the recurrent bottleneck with direct content-based lookup; the Transformer makes that lookup parallel and deep; positional encodings restore order; and pre-training plus distillation turn a large encoder into a practical foundation model.
 \end{InsightBox}
-
-\begin{figure}[htbp]
-\centering
-\begin{tikzpicture}[
-    node distance=0.55cm and 0cm,
-    conceptnode/.style={
-        rectangle, rounded corners=4pt, draw=ocre!80, fill=ocre!8,
-        line width=0.8pt, text width=0.88\textwidth, inner sep=4.5pt,
-        font=\sffamily\small
-    },
-    arrowline/.style={
-        ->, >=Stealth, line width=1pt, color=ocre!80
-    }
-]
-
-\node[conceptnode] (n1) {\textbf{1. Vanilla Seq2Seq Information Bottleneck}\\
-Compressing sequences into a single static context vector $c=h_T$ causes catastrophic forgetting on long horizons.};
-
-\node[conceptnode, below=of n1] (n2) {\textbf{2. Bahdanau Additive Attention}\\
-Computes scalar alignments $e_{t,i}$ and Softmax weights $\alpha_{t,i}$, generating dynamic context vectors $c_t$ over unordered sets.};
-
-\node[conceptnode, below=of n2] (n3) {\textbf{3. Spatial Attention in Computer Vision}\\
-Applies 2D attention over convolutional feature maps $z \in \mathbb{R}^{H \times W \times D}$ (\textit{Show, Attend and Tell}), focusing on salient visual regions.};
-
-\node[conceptnode, below=of n3] (n4) {\textbf{4. Self-Attention \& Scaled Dot-Product ($Q, K, V$)}\\
-All-to-all token interactions with $O(1)$ path length; scaling by $1/\sqrt{D_k}$ prevents Softmax gradient saturation.};
-
-\node[conceptnode, below=of n4] (n5) {\textbf{5. Positional Encoding, Causal Masking \& Multi-Head}\\
-Sinusoidal encodings break permutation equivariance; causal $-\infty$ masking enables parallel training; multi-head mimics conv filter banks.};
-
-\node[conceptnode, below=of n5] (n6) {\textbf{6. The Full Transformer Architecture}\\
-Encoder and Decoder stacks combining Multi-Head Attention, Cross-Attention, Residual Connections, and Layer Normalization.};
-
-\node[conceptnode, below=of n6] (n7) {\textbf{7. Vision Transformers (ViT)}\\
-Splits images into $16 \times 16$ patches; trades off inductive biases for massive global capacity, outperforming ResNets at scale.};
-
-\node[conceptnode, below=of n7] (n8) {\textbf{8. Pre-training, BERT, ELECTRA \& Distillation}\\
-Self-supervised Masked LM, discriminative Replaced Token Detection, and Teacher-Student compression for efficient deployment.};
-
-\draw[arrowline] (n1) -- (n2);
-\draw[arrowline] (n2) -- (n3);
-\draw[arrowline] (n3) -- (n4);
-\draw[arrowline] (n4) -- (n5);
-\draw[arrowline] (n5) -- (n6);
-\draw[arrowline] (n6) -- (n7);
-\draw[arrowline] (n7) -- (n8);
-
-\end{tikzpicture}
-\caption{Conceptual roadmap of Attention Mechanisms, Transformer Networks, ViT, and Pre-training.}\label{fig:ch4_roadmap}
-\end{figure}

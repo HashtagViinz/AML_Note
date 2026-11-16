@@ -23,7 +23,7 @@ To resolve this fundamental tension, \textbf{Self-Supervised Learning (SSL)} re-
 
 This chapter formalizes the principles, mathematical formulations, and evolutionary milestones of self-supervised visual representation learning, following the curriculum designed by Prof.~Fabio Galasso~\cite{galasso2025ssl}.
 
----
+
 
 \section{Foundations of Self-Supervised Learning}
 
@@ -57,7 +57,7 @@ Evaluating the quality of an unsupervised representation requires standardized e
     \item \textbf{Semi-Supervised Benchmark:} The pre-trained model is fine-tuned on extreme low-data regimes, such as $1\%$ or $10\%$ of labeled ImageNet examples. Superior representations yield competitive performance even when labels are drastically scarce.
 \end{enumerate}
 
----
+
 
 \section{Heuristic Pretext Tasks}
 
@@ -95,7 +95,7 @@ Doersch et al.~\cite{doersch2015unsupervised} formulated an unsupervised spatial
 To prevent the model from exploiting trivial shortcuts, two key design safeguards are mandatory:
 \begin{itemize}[leftmargin=*]
     \item \textbf{Random Gap and Jitter:} If patches were strictly adjacent, the network could trivially align continuous edge contours across patch boundaries. Random spatial gaps between patches eliminate edge continuity shortcuts.
-    \item \textbf{Color Jittering and Aberration Removal:} Optical camera lenses exhibit \emph{chromatic aberration}---a radial distortion where color channels separate slightly toward image borders. Networks quickly learn to evaluate the radial color shift to deduce absolute patch position! Converting patches to grayscale or randomly dropping color channels eliminates this hardware shortcut.
+    \item \textbf{Color Jittering and Aberration Removal:} Optical camera lenses exhibit \emph{chromatic aberration}a radial distortion where color channels separate slightly toward image borders. Networks quickly learn to evaluate the radial color shift to deduce absolute patch position! Converting patches to grayscale or randomly dropping color channels eliminates this hardware shortcut.
 \end{itemize}
 
 \subsubsection{Solving Jigsaw Puzzles}
@@ -172,7 +172,7 @@ The predicted target color is computed as a weighted combination of reference co
 Because the only way to accurately colorize a moving object across video frames is to establish pixel-level correspondence, \textbf{visual object tracking emerges naturally as an unsupervised side-effect}. As shown in Figure~\ref{fig:ssl_video_tracking}, the learned attention matrix $A_{ij}$ successfully propagates semantic segmentation masks and human pose keypoints across time without any annotated training examples.
 \end{InsightBox}
 
----
+
 
 \section{Masked Autoencoders (MAE)}
 
@@ -190,7 +190,7 @@ MAE builds upon a critical insight distinguishing vision from natural language:
 \begin{itemize}[leftmargin=*]
     \item In language, words are highly semantic, information-dense symbols; masking $15\%$ of tokens creates an intellectually demanding completion task.
     \item In vision, images are continuous signals with \textbf{heavy spatial redundancy}. A patch can easily be interpolated from adjacent pixels without high-level semantic reasoning.
-    \item \textbf{The Solution:} An \textbf{extreme masking ratio of $75\%$ to $80\%$}. At $75\%$ masking, neighboring information is stripped away, forcing the model to perform holistic holistic semantic scene understanding to synthesize plausible completions.
+    \item \textbf{The Solution:} An \textbf{extreme masking ratio of $75\%$ to $80\%$}. At $75\%$ masking, neighboring information is stripped away, forcing the model to perform holistic semantic scene understanding to synthesize plausible completions.
 \end{itemize}
 
 \subsection{The Asymmetric Encoder-Decoder Architecture}
@@ -201,6 +201,8 @@ The MAE architecture is uniquely asymmetric, consisting of two distinct stages:
     \item \textbf{ViT Encoder (Visible Patches Only):} The original image is partitioned into non-overlapping patches (e.g., $16 \times 16$). A uniform random sample of $75\%$ of the patches is completely removed. Crucially, the deep ViT encoder operates \textbf{only on the remaining $25\%$ visible patches}. Because self-attention complexity scales quadratically with sequence length $N$ ($\mathcal{O}(N^2)$), dropping $75\%$ of tokens accelerates encoder training by more than an order of magnitude.
     \item \textbf{ViT Decoder (Full Token Sequence):} The decoder is a lightweight Transformer stack. Its input is the full sequence of tokens: the transformed representations of visible patches merged with shared, learnable \texttt{[mask]} tokens at the missing patch positions. Fixed sinusoidal positional embeddings are added to all tokens before decoding.
 \end{enumerate}
+
+The asymmetry is intentional: because the encoder processes only $25\%$ of the tokens, it can be made very large, while the decoder is shallow and exists only to reconstruct pixels. The decoder is discarded after pre-training, so it does not constrain the encoder design. The masking ratio is the key hyperparameter: too little masking makes the task trivial, while too much removes the context needed for reconstruction; around $75\%$ is the empirical sweet spot.
 
 \subsection{Reconstruction Objective and Normalization}
 
@@ -227,7 +229,7 @@ A defining empirical hallmark of MAE (and masked modeling in general) is the div
     \item \textbf{End-to-End Fine-Tuning:} When fine-tuned end-to-end, MAE achieves top-tier results ($87.8\%$ on ImageNet-1K with ViT-Huge), demonstrating that the weights serve as an exceptional general-purpose visual prior.
 \end{itemize}
 
----
+
 
 \section{Contrastive Representation Learning}
 
@@ -324,13 +326,13 @@ where $m \approx 0.999$ is a momentum coefficient. The query encoder $\theta_q$ 
 
 Chen et al.~\cite{chen2020improved} subsequently released \textbf{MoCo v2}, integrating SimCLR's non-linear projection head and cosine learning rate decay into the MoCo framework. MoCo v2 surpassed SimCLR while running on standard, affordable GPU hardware without requiring multi-node TPU pods.
 
----
+
 
 \section{Non-Contrastive Siamese Architectures}
 
 \subsection{The Representation Collapse Problem}
 
-In contrastive learning, negative pairs supply the repulsive force that prevents \textbf{representation collapse}---the degenerate failure mode where all images map to an identical, constant output vector $f(x) = c$.
+In contrastive learning, negative pairs supply the repulsive force that prevents \textbf{representation collapse}the degenerate failure mode where all images map to an identical, constant output vector $f(x) = c$.
 
 However, maintaining thousands of negative samples introduces substantial memory and computational overhead. Can a Siamese network learn high-quality representations \textbf{without any negative samples}?
 
@@ -417,6 +419,17 @@ The student minimizes cross-entropy with the teacher's predictions:
 \begin{equation}
     \mathcal{L}_{\text{DINO}} = - \sum_{k=1}^K P_{t,k}(x) \log P_{s,k}(x)
 \end{equation}
+The teacher is not trained by gradients: its weights are an exponential moving average of the student,
+\begin{equation}
+    \theta_t \leftarrow \lambda \theta_t + (1-\lambda)\theta_s,
+\end{equation}
+with momentum $\lambda$ close to $1$ (for example, $0.99$). The student and the teacher receive different augmented views of the same image; the loss is symmetrized by swapping the two views, and the teacher's predictions are treated as fixed targets (stop-gradient), so only the student is updated.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.90\textwidth]{Pictures/ssl_dino_attention_segmentation.png}
+    \caption{DINO training pseudo-code (from course slides~\cite{galasso2025ssl, caron2021emerging}). The teacher is updated by EMA, the center is updated from the teacher outputs, and gradients flow only through the student.}\label{fig:ssl_dino_pseudocode}
+\end{figure}
 
 \subsubsection{Avoiding Collapse: Centering and Sharpening}
 Without negative pairs, distillation models risk two distinct failure modes:
@@ -432,100 +445,72 @@ DINO eliminates both failure modes through dual complementary mechanisms:
 \end{itemize}
 
 \subsubsection{Emergence of Unsupervised Semantic Segmentation}
-A remarkable breakthrough of DINO is the emergence of scene segmentation: without any human labels, the self-attention maps of the final $[CLS]$ token in a DINO-trained ViT naturally attend to the boundaries of semantic foreground objects, as shown in Figure~\ref{fig:ssl_dino_attention}.
+A remarkable breakthrough of DINO is the emergence of scene segmentation: without any human labels, the self-attention maps of the final $[CLS]$ token in a DINO-trained ViT naturally attend to the boundaries of semantic foreground objects. The same attention heads also capture object parts and coherent regions, which is why DINO features support dense tasks such as segmentation and correspondence despite being trained only with an image-level objective.
 
-\begin{figure}[htbp]
-    \centering
-    \includegraphics[width=0.90\textwidth]{Pictures/ssl_dino_attention_segmentation.png}
-    \caption{Emergent unsupervised semantic segmentation in DINO (from course slides~\cite{galasso2025ssl, caron2021emerging}). The multi-head self-attention maps of a Vision Transformer trained with DINO automatically delineate semantic objects and boundaries without any segmentation labels.}\label{fig:ssl_dino_attention}
-\end{figure}
+\subsection{\texorpdfstring{DINOv2:}{DINOv2:} Scaling Self-Supervised Features}
 
-Oquab et al.~\cite{oquab2023dinov2} extended this in \textbf{DINOv2}, combining image-level DINO distillation with patch-level masked modeling (iBOT) across hundreds of millions of curated images. DINOv2 generates universal, frozen visual features that achieve state-of-the-art results in monocular depth estimation, dense segmentation, and image retrieval without fine-tuning.
+DINOv2 (Oquab et al.~\cite{oquab2023dinov2}) turns the DINO recipe into a general-purpose visual backbone. It combines the image-level DINO objective with a patch-level masked image modeling objective (iBOT): a random subset of patches is masked, and the model must predict the teacher's features at those positions from the visible context. A \textbf{KoLeo regularizer} spreads the features of different images uniformly and prevents them from collapsing into a few clusters. Training uses a curated dataset (LVD-142M) and a large ViT teacher (up to 1.1B parameters).
 
----
+The practical payoff is a set of frozen features that transfer without fine-tuning. The slide visualizes the first three principal components of DINOv2 patch features: the same object parts receive similar colors across different poses, styles, and even object instances, while the background is separated by thresholding the first component. This is evidence that the model has learned dense semantic structure, not just a single global image vector. DINOv2 reaches strong results in depth estimation, segmentation, and image retrieval with a frozen backbone.
 
-\section{Chapter Summary and Conceptual Graph}
+\subsection{\texorpdfstring{DINOv3:}{DINOv3:} Scaling and Gram Anchoring}
 
-\subsection{Comparative Summary of SSL Paradigms}
+DINOv3 (Sim{\'e}oni et al.~\cite{simeoni2025dinov3}) scales the recipe by roughly an order of magnitude: 1.689B curated training images selected from a pool of about 17B public images, a 7B-parameter ViT teacher, and 1M self-supervised iterations. The pipeline has five stages:
+\begin{enumerate}[leftmargin=*]
+    \item \textbf{Curate:} hierarchical clustering and balanced sampling produce the LVD-1689M dataset.
+    \item \textbf{Scale:} a custom ViT with 7B parameters and patch size 16.
+    \item \textbf{Position:} axial RoPE and box-jitter regularization avoid positional artifacts.
+    \item \textbf{Optimize:} DINO + iBOT + distributed KoLeo, with batch size 4096.
+    \item \textbf{Train long:} 1M steps with constant learning rate, weight decay, and teacher EMA after warm-up.
+\end{enumerate}
 
-Table~\ref{tab:ssl_paradigms} summarizes the core algorithmic families analyzed in this chapter:
+The central trade-off is that longer and larger self-supervised training improves global recognition but can degrade local patch consistency: the pairwise similarity structure of patch features becomes noisy. DINOv3 addresses this with \textbf{Gram anchoring}. Let $X_S$ be the current student patch features and $X_G$ the features of an earlier ``Gram teacher'', both L2-normalized. Their Gram matrices $X_S X_S^T$ and $X_G X_G^T$ encode pairwise patch similarities. The loss adds
+\begin{equation}
+    \mathcal{L}_{\text{Gram}} = \left\| X_S X_S^T - X_G X_G^T \right\|_F^2.
+\end{equation}
+Because the constraint acts on pairwise similarities rather than on individual feature vectors, the features can still move while the local geometry stays coherent.
+
+After pre-training, the 7B teacher is distilled into a family of smaller ViT students: S (21M), S+ (29M), B (86M), L (0.3B), and H+ (0.8B). A high-resolution adaptation stage goes from $256^2$ pre-training to mixed $512/768$ global crops, then to more than $4$K stable feature maps after about 10k iterations. The resulting frozen backbones support segmentation, depth, 3D correspondence, tracking, retrieval, and classification.
+
+\textbf{DINOv2 versus DINOv3.} DINOv2 uses a 1.1B teacher and LVD-142M, with multiple cosine schedules and a fixed training horizon. DINOv3 scales to a 7B teacher and LVD-1689M, uses constant schedules, continues training while downstream metrics improve, and adds Gram anchoring to preserve patch locality.
+
+\section{Comparative Overview of SSL Paradigms}
+
+The SSL families differ in how they create a training signal and in how they prevent representation collapse: heuristic tasks rely on transformation constraints, MAE on extreme masking and pixel reconstruction, contrastive methods on negative pairs, BYOL and SimSiam on predictor asymmetry and stop-gradients, and DINO on centering/sharpening (plus Gram anchoring in DINOv3).
+
+The progression is not a simple replacement chain. Heuristic tasks are cheap but domain-specific; MAE excels at fine-tuning; contrastive methods produce strong linear features but need negatives; BYOL and SimSiam remove negatives; DINO combines self-distillation with ViTs, and DINOv2/v3 add masked patch modeling, KoLeo, and Gram anchoring for dense features.
+
+\newpage
+\section{Recap: Key Concepts}
+
+The chapter follows one main thread: replace human labels with a self-supervised objective, learn representations that transfer to downstream tasks, and prevent the trivial collapse of those representations. The evolution goes from handcrafted pretext tasks to masked modeling, contrastive learning, negative-free siamese networks, and finally self-distillation with ViTs.
 
 \begin{table}[htbp]
 \centering
 \small
-\setlength{\tabcolsep}{3.5pt}
-\begin{tabular}{p{0.16\textwidth} p{0.17\textwidth} p{0.11\textwidth} p{0.24\textwidth} p{0.24\textwidth}}
+\renewcommand{\arraystretch}{1.15}
+\begin{tabular}{p{0.20\textwidth} p{0.35\textwidth} p{0.33\textwidth}}
 \toprule
-\textbf{Paradigm} & \textbf{Key Methods} & \textbf{Negatives?} & \textbf{Anti-Collapse Mechanism} & \textbf{Primary Downstream Strength} \\
+\textbf{Concept} & \textbf{Key idea} & \textbf{Formula / rule} \\
 \midrule
-\textbf{Heuristic Pretext} & Rotation, Jigsaw, Inpainting, Color & No & Transformation task constraints & Historical proof-of-concept; modest linear probing \\
-\addlinespace
-\textbf{Masked Modeling} & MAE, Context Encoders & No & High masking ratio ($75\%$) + Pixel reconstruction & Outstanding fine-tuning; state-of-the-art visual prior \\
-\addlinespace
-\textbf{Contrastive Learning} & SimCLR, MoCo (v1, v2) & Yes & InfoNCE negative repulsion on hypersphere & Exceptional linear probing; invariant global features \\
-\addlinespace
-\textbf{Non-Contrastive Siamese} & BYOL, SimSiam & No & Predictor head + Stop-gradient / EMA & High efficiency; robust to batch size constraints \\
-\addlinespace
-\textbf{Self-Distillation} & DINO, DINOv2 & No & Centering (mean drift) + Sharpening ($\tau_t < \tau_s$) & Unsupervised semantic discovery; dense correspondence \\
+Pretext / downstream & Learn without labels, then transfer the encoder & $f_\theta$ on $\mathcal{D}_{\text{unlabeled}}$, evaluate on $\mathcal{D}_{\text{downstream}}$ \\
+Linear probe & Freeze the encoder and train a linear classifier & $\hat{y}=\operatorname{softmax}(W^\top f_\theta(x)+b)$ \\
+Heuristic tasks & Rotation, relative patch, jigsaw & classification of the applied transformation \\
+Inpainting / colorization & Reconstruct or predict missing channels & $\mathcal{L}_{\text{recon}}+\lambda\mathcal{L}_{\text{adv}}$; split-brain loss \\
+MAE & Mask most patches, reconstruct pixels & $\mathcal{L}=\frac{1}{|M|}\sum_{i\in M}\|x_i-\hat{x}_i\|_2^2$ \\
+InfoNCE & Positive pair against negatives on a hypersphere & $-\log\frac{\exp(\operatorname{sim}(q,k^+)/\tau)}{\sum_j\exp(\operatorname{sim}(q,k_j)/\tau)}$ \\
+SimCLR & Two views, NT-Xent, non-linear projection head & batch of $2N$ views; large batch \\
+MoCo & FIFO queue and momentum key encoder & $\theta_k\leftarrow m\theta_k+(1-m)\theta_q$ \\
+BYOL & Predictor plus EMA target, no negatives & $2-2\frac{\langle p_1,z_2\rangle}{\|p_1\|\|z_2\|}$ \\
+SimSiam & Shared encoder, predictor, stop-gradient & $\mathcal{D}(p_1,\operatorname{sg}(z_2))$ \\
+DINO & Self-distillation with centering and sharpening & $\mathcal{L}=-\sum_k P_{t,k}\log P_{s,k}$ \\
+DINOv2 / DINOv3 & iBOT + KoLeo; Gram anchoring at scale & $\mathcal{L}_{\text{Gram}}=\|X_SX_S^\top-X_GX_G^\top\|_F^2$ \\
+Anti-collapse & Negatives, asymmetry, or sharpening & InfoNCE; predictor + EMA; centering/sharpening \\
 \bottomrule
 \end{tabular}
-\caption{Systematic comparison across modern Self-Supervised Learning paradigms.}\label{tab:ssl_paradigms}
+\caption{One-page recap of the key concepts in this chapter.}\label{tab:ch5_recap}
 \end{table}
 
-\newpage
-\subsection{Logical Roadmap of Representation Learning}
-
-Figure~\ref{fig:ssl_conceptual_graph} maps the conceptual progression from supervised limitations to modern self-supervised foundation models:
-
-\begin{figure}[htbp]
-\centering
-\begin{tikzpicture}[
-    node distance=1.1cm and 1.5cm,
-    every node/.style={font=\sffamily\small},
-    conceptnode/.style={
-        rectangle, 
-        rounded corners=6pt, 
-        draw=ocre, 
-        fill=ocre!8, 
-        line width=1.2pt, 
-        text width=8.5cm, 
-        align=center, 
-        inner sep=7pt
-    },
-    arrowline/.style={
-        -{Stealth[length=6pt, width=4pt]}, 
-        draw=ocre, 
-        line width=1.3pt
-    }
-]
-
-\node[conceptnode] (node1) {\textbf{Supervised Learning Bottleneck}\\Annotation expense; supervision collapse to task-specific manifolds};
-\node[conceptnode, below=of node1] (node2) {\textbf{Heuristic Pretext Tasks}\\Predicting rotations, patch positions, jigsaw, and inpainting};
-\node[conceptnode, below=of node2] (node3) {\textbf{Generative Masked Modeling (MAE)}\\Extreme $75\%$ ViT masking, asymmetric encoder-decoder, MSE loss};
-\node[conceptnode, below=of node3] (node4) {\textbf{Contrastive Learning (InfoNCE \& SimCLR)}\\Instance discrimination; NT-Xent loss; non-linear projection head};
-\node[conceptnode, below=of node4] (node5) {\textbf{Decoupled Contrastive Learning (MoCo)}\\FIFO memory queue of keys; momentum encoder for temporal consistency};
-\node[conceptnode, below=of node5] (node6) {\textbf{Non-Contrastive Siamese Learning (BYOL \& SimSiam)}\\Elimination of negatives; architectural predictor asymmetry; stop-gradient};
-\node[conceptnode, below=of node6] (node7) {\textbf{Self-Distillation with Vision Transformers (DINO)}\\Centering \& sharpening; emergence of unsupervised semantic segmentation};
-
-\draw[arrowline] (node1) -- (node2);
-\draw[arrowline] (node2) -- (node3);
-\draw[arrowline] (node3) -- (node4);
-\draw[arrowline] (node4) -- (node5);
-\draw[arrowline] (node5) -- (node6);
-\draw[arrowline] (node6) -- (node7);
-
-\end{tikzpicture}
-\caption{Conceptual roadmap of Self-Supervised Learning paradigms.}\label{fig:ssl_conceptual_graph}
-\end{figure}
-
 \begin{InsightBox}
-\textbf{Connecting the Self-Supervised Paradigms:} \\
-\begin{itemize}[leftmargin=*]
-    \item \textbf{Supervised $\to$ Heuristic:} Replacing manual annotations with data-driven transformations eliminates human labeling but risks low-level heuristic shortcuts.
-    \item \textbf{Heuristic $\to$ Masked Modeling (MAE):} Elevating inpainting to Vision Transformers with $75\%$ masking forces holistic semantic scene understanding while slashing encoder computational cost.
-    \item \textbf{Heuristic $\to$ Contrastive Learning:} Replacing domain heuristics with task-agnostic instance discrimination maps semantic views to a unit hypersphere via mutual information maximization.
-    \item \textbf{SimCLR $\to$ MoCo:} Decoupling dictionary size from mini-batch size via a dynamic FIFO memory queue and momentum encoder enables massive negative sets on standard hardware.
-    \item \textbf{Contrastive $\to$ Non-Contrastive (BYOL/SimSiam):} Proving negative samples are unnecessary; architectural asymmetry and stop-gradient prevent representation collapse.
-    \item \textbf{Non-Contrastive $\to$ Self-Distillation (DINO):} Unifying ViT distillation with centering and sharpening yields representations with emergent, unsupervised semantic segmentation capabilities.
-\end{itemize}
+\textbf{The one-sentence version:} self-supervised learning replaces labels with a pretext objective, and the modern recipe learns invariant features by contrasting or distilling views while carefully preventing collapse; DINOv3 shows that scaling this recipe and anchoring patch geometry yields general-purpose dense visual features.
 \end{InsightBox}
