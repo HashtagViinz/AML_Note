@@ -12,7 +12,7 @@ The build must end with `EXIT=0` and produce `main.pdf`.
 
 ## Expected output
 
-- Current page count: **115 pages** (may change when a chapter is expanded; record the new count in the decision log).
+- Current page count: **117 pages** (may change when a chapter is expanded; record the new count in the decision log).
 - Current known warning: one overfull hbox in the bibliography, caused by the `mixup` entry.
 - Any additional overfull hbox, undefined reference, or missing citation is a regression and must be fixed before committing.
 

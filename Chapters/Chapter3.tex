@@ -4,6 +4,20 @@
 \chapterimage{Pictures/Indice.png}
 \chapter{Sequence Models}\label{ch:sequence_models}
 
+\begin{ExamFocusBox}
+\textbf{High-yield oral-exam topics:}
+\begin{itemize}[nosep, leftmargin=*]
+    \item causal and dilated temporal convolutions; TCN trade-offs;
+    \item RNN equations, unrolling, and parameter sharing;
+    \item BPTT, vanishing/exploding gradients, and gradient clipping;
+    \item LSTM cell state, gates, and the gradient highway;
+    \item GRU and the LSTM-versus-GRU comparison;
+    \item RNN inductive bias and the comparison with Transformers (Chapter~\ref{ch:attention_transformers}).
+\end{itemize}
+\textbf{Exam angle:} explain why recurrence is sequential and why gating helps long-range credit assignment.
+\end{ExamFocusBox}
+
+
 \section{Introduction to Sequence Modeling}
 
 Standard feedforward architectures (such as multi-layer perceptrons and traditional convolutional neural networks) operate strictly under a \textbf{one-to-one} paradigm: a fixed-dimensional input vector $x \in \mathbb{R}^D$ is mapped to a fixed-dimensional output $y \in \mathbb{R}^K$. While effective for static tasks like single-image classification, this formulation fails when dealing with data that unfolds over time or possesses an intrinsic sequential nature, such as text, audio, video streams, or financial time series. This chapter covers sequence modeling paradigms, recurrent neural networks, and gating mechanisms based on the course lecture slides~\cite{galasso2025seqmodels}.

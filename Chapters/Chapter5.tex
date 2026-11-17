@@ -4,6 +4,21 @@
 \chapterimage{Pictures/Indice.png}
 \chapter{Self-Supervised Learning}\label{ch:self_supervised_learning}
 
+\begin{ExamFocusBox}
+\textbf{High-yield oral-exam topics:}
+\begin{itemize}[nosep, leftmargin=*]
+    \item what a pretext task is, with rotation, jigsaw, inpainting, and colorization;
+    \item SimCLR: two views, NT-Xent, projection head, and large batches;
+    \item MoCo and MoCo v2: FIFO queue and momentum encoder;
+    \item BYOL and SimSiam: predictor, stop-gradient, and why they do not collapse;
+    \item MAE: high masking ratio, asymmetric encoder-decoder, and pixel loss;
+    \item DINO, DINOv2, and DINOv3;
+    \item InfoNCE and why it depends on the negative-set size.
+\end{itemize}
+\textbf{Exam angle:} be ready to draw SimCLR or BYOL and explain the anti-collapse mechanism.
+\end{ExamFocusBox}
+
+
 \section{Introduction: Transcending the Supervised Bottleneck}
 
 Throughout Chapters~\ref{ch:foundations} to~\ref{ch:attention_transformers}, our models operated predominantly under the \textbf{supervised learning paradigm}. In supervised deep learning, deep architectures require massive volumes of human-annotated data (such as ImageNet with $1.28$ million images across $1000$ categories) to discover rich representations. However, full supervision suffers from two critical, systemic limitations:

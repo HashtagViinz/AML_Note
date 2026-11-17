@@ -17,10 +17,11 @@ If a standard conflicts with an explicit instruction from the author, the author
 | `07_Chapter_Template.md` | Copy-ready skeleton for a new chapter. |
 | `08_Concept_Map.md` | Detailed lecture-concept to book-section mapping, chapter by chapter. |
 | `09_Slide_Key_Map.md` | Slide-keyed mapping: each professor slide group to its place in the book. |
+| `10_Exam_Question_Map.md` | Analysis of the collected old exam questions, priorities, coverage, and missing topics. |
 
 ## Current status
 
 - Chapters 1--6 have been revised and now end with `Recap: Key Concepts`.
 - The symbol standard is a target, not yet applied globally. Do not change symbols in one chapter in isolation.
-- The book currently compiles to 115 pages with one known bibliography overfull hbox.
+- The book currently compiles to 117 pages with one known bibliography overfull hbox.
 - The handwritten backpropagation exercise (`Pictures/FDS_Exercises.pdf`) is a required part of Chapter 1 and must never be removed.

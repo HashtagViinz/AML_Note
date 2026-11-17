@@ -124,7 +124,7 @@ Page numbers are **PDF pages of the deck**, not the printed slide numbers at the
 | 6--9 | Semantic segmentation, things vs stuff | 6.1--6.2 | Complete |
 | 10--14 | Sliding-window segmentation and its limits | 6.2.1 | Complete |
 | 15--18 | Fully convolutional networks | 6.2.2 | Complete |
-| 19--37 | Unpooling, max unpooling, transpose convolution, matrix view | 6.2.3 | Complete |
+| 19--37 | Nearest neighbor, bed of nails, unpooling, max unpooling, transpose convolution, matrix view | 6.2.3 | Complete |
 | 38--42 | U-Net and skip connections | 6.2.4 | Complete |
 | 43--45 | Segmentation metrics and data collection | 6.2.5 | Complete |
 | 46--53 | Single-object detection, classification + localization | 6.3.1 | Complete |

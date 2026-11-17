@@ -1,0 +1,109 @@
+1)
+I started with attention
+He asked: 
+strengths of attention
+inductive bias of transformers
+attention in graph attention networks (write equation)
+GANs
+Moco and MocoV2
+Transpose convolution
+2)
+My subject was GCNs 
+He asked: which part of the GCNs formula do what 
+Autoencoders - what is their trivial solution and how do we avoid it 
+Faster R-CNN - what kinds of losses does it use
+3)
+My subject was object detection, I was stopped after talking about faster R CNN and was asked about single stage detectors, 
+then I got open questions about autoencoders and DINO.
+4)
+InfoNCE (my choice)
+Why does it depend on the batch size?
+In contrastive leraning, can we have that some positives are considered negative?
+What is CLIP?
+How can we perform zero-shot classification using CLIP?
+What is hierarchical classification?
+What is overmoothing?
+5)
+masked autoencoders, Faster RNN and Fast RNN,  methods for region of interest proposal, GCN formula.
+6)
+Describe the masking mechanism of BERT
+What is radius in hyperbolic space
+What is the oversmoothing problem
+How does BYOL avoid collapse
+Why is the auto encoder smaller in the middle
+7)
+Free question: DINO
+He asked me:
+Other techniques to do self supervision: BYOL
+How does byol prevent collapse
+Difference between AE and VAE
+Oversmoothing
+8)
+Some questions he made yesterday:
+
+Attention
+Computation Complexity of attention per layer
+Difference between autoencoders and variational autoencoders
+Variational autoencoder structure
+Self supervised learning pretext task
+Name some pretext tasks
+Semantic segmentation
+TCN.
+Attention
+Is the self-attention layer parallelizable?
+What is CLIP?
+What does the radius represent in hyperbolic space?
+Object detection
+Sketch the structure of Mask R-CNN
+Can you describe how you train CLIP?
+What are the positives in CLIP?
+Logarithmic and exponential mapping
+What is a diffusion model?
+Attention
+What is the scaling vector?
+Why is it convenient to use Transformers despite their complexity?
+Self-supervised learning with contrastive learning
+Diffusion model
+Hierarchical classification
+9)
+Some of the questions:
+-zero-shot learning
+- architecture used for the pre-text task of rotation
+-transpose convolution
+- problem with GCNs
+- inductive bias of RNNs
+- embeddings in BERT
+-classificaton with BERT
+- difference between Autoencoders and Variational Autoencoders
+-ROI pooling
+-draw the architecture of mask R-CNN 
+-what is a pre-text task
+-how do you move from Euclidean to hyperbolic space
+10)
+-My topic: hyperbolic DL
+He stoped me after I talked about distance in poincarre model and asked about the interpretation of the radius
+-AE and VAE
+-MoCo and MoCo v2
+11)
+generally, the questions were mostly regarding:
+Self Suppervised Learning (various pretext tasks, including SimCLR, MoCo ecc.)
+both specific questions like "do you remember masked autoencoders?" or more generic open questions like "what is contrastive learning?"
+Semantic segmentation (and the network architecture, that is the unet, with the transpose convolutions ecc.)
+Comparison between RNN, Transformers, GCN ecc. in terms of inductive bias, computational cost, memory ecc.
+What is CLIP
+Hyperbolic radius interpretations (uncertainty and hierarchy)
+Exp map and Log map
+Diffusion models
+Fast R-CNN vs Faster-RCNN and Mask R-CNN
+Autoencoders vs VAE
+12)
+GCN equation (my starting topic was GCN)
+Mask R-CNN
+Diffusion Models
+CLIP
+DINO
+13)
+If you start with sequential Models he asks a lot to compare RNNs and Transformers or something like this.
+There are like ~ 7 questions, from diferent topics.
+Asked me how attention in GCN works.. asks what is a hyperbolic space. 
+Asked few times to draw SimCLR model

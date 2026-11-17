@@ -31,6 +31,7 @@ Use the boxes defined in `structure.tex` consistently:
 | `keywordbox` | A formal rule, a definition, or a compact set of equations that must stand out. |
 | `examplebox` | A worked numerical example or a step-by-step trace. |
 | `InsightBox` | The single most important takeaway of a section or of the whole chapter. |
+| `ExamFocusBox` | A chapter-opening box that lists the high-yield oral-exam topics; it does not replace the chapter content. |
 
 Rules:
 

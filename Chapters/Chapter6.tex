@@ -4,6 +4,21 @@
 \chapterimage{Pictures/Indice.png}
 \chapter{Object Detection and Segmentation}\label{ch:detection_segmentation}
 
+\begin{ExamFocusBox}
+\textbf{High-yield oral-exam topics:}
+\begin{itemize}[nosep, leftmargin=*]
+    \item Fast R-CNN versus Faster R-CNN and the role of the RPN;
+    \item the four losses of Faster R-CNN;
+    \item single-stage detectors: YOLO, SSD, RetinaNet, and focal loss;
+    \item ROI pooling versus RoI Align;
+    \item Mask R-CNN: classification, box, and mask branches;
+    \item U-Net, semantic segmentation, and transpose convolution;
+    \item IoU and mAP.
+\end{itemize}
+\textbf{Exam angle:} be ready to sketch Faster R-CNN and Mask R-CNN and to explain where each loss is applied.
+\end{ExamFocusBox}
+
+
 \section{From Classification to Dense Prediction}
 
 Image classification assigns a single label to an entire image. Detection and segmentation ask a harder question: \emph{where} is the object, and \emph{which pixels} belong to it? Figure~\ref{fig:det_seg_tasks} contrasts the four standard computer-vision tasks.
@@ -47,15 +62,20 @@ The network is trained with a per-pixel cross-entropy loss. Computing full-resol
     \caption{Fully convolutional segmentation with downsampling and upsampling (from course slides~\cite{galasso2025detection}). The network produces low-resolution semantic scores and then upsamples them to a full-resolution prediction map.}\label{fig:det_seg_fcn}
 \end{figure}
 
-\subsection{Upsampling: Unpooling, Max Unpooling, and Transpose Convolution}
+\subsection{Upsampling: Nearest Neighbor, Bed of Nails, Unpooling, and Transpose Convolution}
 
-Downsampling increases the field of view but discards spatial detail. The expanding path must restore the resolution. Three standard tools are:
+Downsampling increases the field of view but discards spatial detail. The expanding path must restore the resolution. Upsampling methods split into fixed operations and learnable operations.
 
-\begin{enumerate}[leftmargin=*]
-    \item \textbf{Unpooling:} place each activation back at its original spatial location and fill the remaining positions with zeros.
-    \item \textbf{Max unpooling:} remember the indices selected by max pooling and scatter the activation back to the winning position. This preserves the exact location of the strongest response.
-    \item \textbf{Transpose convolution:} learn an upsampling filter instead of using fixed zeros or indices. It is the transpose of the matrix that represents the corresponding convolution.
-\end{enumerate}
+\paragraph{Fixed upsampling.}
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Nearest neighbor:} copy each input value to a block of output positions. For a $2 \times 2$ input and a scale factor of $2$, every value is replicated in a $2 \times 2$ block, producing a $4 \times 4$ output. It has no learnable parameters and is very cheap, but the result is blocky.
+    \item \textbf{Bed of nails:} place each input value at one position inside its output block and fill all remaining positions with zeros. The output is sparse, like nails on a board. It is also parameter-free; a convolution is usually applied afterwards to fill the gaps.
+    \item \textbf{Max unpooling:} remember the indices selected by max pooling and scatter each activation back to its winning position. This preserves the exact location of the strongest response and is the index-aware version of unpooling.
+\end{itemize}
+Nearest neighbor, bed of nails, and max unpooling are all \emph{fixed}: they rearrange activations without learning a filter.
+
+\paragraph{Learnable upsampling.}
+\textbf{Transpose convolution} learns an upsampling filter instead of using fixed copies, zeros, or indices. It is the transpose of the matrix that represents the corresponding convolution.
 
 For a 1D input $[p,q]$ and a kernel $[u,v,w]$, the transpose convolution produces
 \[
@@ -69,7 +89,7 @@ then the transpose convolution is
 \begin{equation}
     \vec{x} *^{T} \vec{a} = X^{T} \vec{a}.
 \end{equation}
-The name comes from this transpose, not from a new kernel family. The operation is also called \emph{deconvolution} in some libraries, although it is not the mathematical inverse of convolution. Unpooling and max unpooling are fixed operations that only rearrange activations; the transpose convolution is the learnable alternative, because its kernel is trained with the rest of the network.
+The name comes from this transpose, not from a new kernel family. The operation is also called \emph{deconvolution} in some libraries, although it is not the mathematical inverse of convolution. Because its kernel is trained with the rest of the network, transpose convolution can learn a smoother and more task-specific upsampling than nearest neighbor or bed of nails.
 
 \begin{figure}[htbp]
     \centering
@@ -276,6 +296,7 @@ The same detection machinery extends beyond bounding boxes:
 \end{itemize}
 These are extensions of the core ideas, not separate detection paradigms: a backbone extracts features, a head predicts geometry and semantics, and a matching or post-processing step turns the predictions into a structured output.
 
+\newpage
 \section{Recap: Key Concepts}
 
 The chapter follows the path from coarse image labels to dense, structured predictions: classification says \emph{what}, detection says \emph{what and where}, semantic segmentation says \emph{which class per pixel}, and instance segmentation says \emph{which pixels belong to which object}. The architecture evolves from sliding windows to shared convolutional features, region proposals, single-stage detectors, and Transformer-based set prediction.
@@ -291,6 +312,7 @@ The chapter follows the path from coarse image labels to dense, structured predi
 Task taxonomy & Classification, semantic segmentation, detection, instance segmentation & label, pixel map, boxes, masks \\
 Semantic segmentation & One class per pixel; sliding windows are inefficient & $\hat{y}[i,j]=\arg\max_c s_c[i,j]$ \\
 FCN & Convolutional scores for all pixels & $C \times H \times W$ output \\
+Fixed upsampling & Nearest neighbor, bed of nails, max unpooling & parameter-free rearrangement \\
 Transpose convolution & Learnable upsampling & $\vec{x}*^T\vec{a}=X^T\vec{a}$ \\
 U-Net & Encoder-decoder with skip connections & high-resolution detail + context \\
 IoU & Overlap between prediction and ground truth & $|P\cap G|/|P\cup G|$ \\

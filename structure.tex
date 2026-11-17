@@ -426,3 +426,19 @@ innerbottommargin=5pt]{cBox}
   boxed title style={size=small, colback=blue!70!black, colframe=blue!70!black},
   #1
 }
+
+% Creiamo l'ambiente personalizzato "ExamFocusBox"
+\newtcolorbox{ExamFocusBox}[1][]{
+  enhanced,
+  colback=red!4,
+  colframe=red!70!black,
+  boxrule=1pt,
+  arc=3mm,
+  drop fuzzy shadow,
+  breakable,
+  title=\textbf{\textsf{Exam Focus}},
+  coltitle=white,
+  attach boxed title to top left={xshift=4mm, yshift=-1mm},
+  boxed title style={size=small, colback=red!70!black, colframe=red!70!black},
+  #1
+}

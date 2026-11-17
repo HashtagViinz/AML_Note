@@ -4,6 +4,20 @@
 \chapterimage{Pictures/Indice.png}
 \chapter{Attention Mechanisms and Transformer Networks}\label{ch:attention_transformers}
 
+\begin{ExamFocusBox}
+\textbf{High-yield oral-exam topics:}
+\begin{itemize}[nosep, leftmargin=*]
+    \item strengths of attention and the inductive bias of Transformers;
+    \item complexity per layer, maximum path length, and parallelization;
+    \item the role of the scaling factor $1/\sqrt{D_k}$;
+    \item multi-head attention, positional encoding, and causal masking;
+    \item BERT masking, token/position embeddings, and fine-tuning;
+    \item RNN versus Transformer: inductive bias, cost, and memory.
+\end{itemize}
+\textbf{Not yet in this chapter:} GCN/GAT attention equation, CLIP, zero-shot and hierarchical classification.
+\end{ExamFocusBox}
+
+
 \section{Introduction: Transcending the Recurrent Bottleneck}
 
 In Chapter~\ref{ch:sequence_models}, we explored sequential modeling through the lens of recurrence. While architectures such as Long Short-Term Memory (LSTM) alleviate the vanishing gradient problem via an additive cell state highway, recurrent systems remain fundamentally constrained by their temporal formulation:
@@ -616,8 +630,8 @@ The chapter follows a single arc: the fixed context vector of seq2seq creates a 
 
 \begin{table}[htbp]
 \centering
-\small
-\renewcommand{\arraystretch}{1.15}
+\footnotesize
+\renewcommand{\arraystretch}{0.95}
 \begin{tabular}{p{0.20\textwidth} p{0.35\textwidth} p{0.33\textwidth}}
 \toprule
 \textbf{Concept} & \textbf{Key idea} & \textbf{Formula / rule} \\

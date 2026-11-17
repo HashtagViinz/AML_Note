@@ -177,7 +177,7 @@ Deck: `08_AML_Detection_Segmentation.pdf`.
 | Things vs stuff | 6.1 | Complete |
 | Sliding-window segmentation and its limits | 6.2.1 | Complete |
 | Fully convolutional networks | 6.2.2 | Complete |
-| Unpooling, max unpooling, transpose convolution | 6.2.3 | Complete |
+| Nearest neighbor, bed of nails, unpooling, max unpooling, transpose convolution | 6.2.3 | Complete |
 | U-Net and skip connections | 6.2.4 | Complete |
 | Segmentation metrics (pixel accuracy, IoU, per-class accuracy) | 6.2.5 | Complete |
 | Annotation challenges and datasets | 6.2.5 | Complete |
